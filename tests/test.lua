@@ -1,37 +1,28 @@
 lu = require('luaunit')
 require("pylua")
 
-function test_pyadd()
-    lu.assertEquals(add(2, 6), 8)
-    lu.assertEquals(add(2, -6), -4)
+
+py_module = Python.PyLoad("test")
+
+
+function test_python_get()
+    local a = py_module.number
+    local b = py_module.double
+    local c = py_module.boolean
+    local d = py_module.string
+    lu.assertEquals(a, 121)
+    lu.assertEquals(b, 1.5)
+    lu.assertEquals(c, 0)
+    lu.assertEquals(d, "Python")
 end
 
-function test_pysub()
-    lu.assertEquals(sub(6, 2), 4)
-    lu.assertEquals(sub(2, -6), 8)
-end
-
-function test_array()
-    a = array.new(10)
-    array.set(a, 5, 5)
-    a:set(2, 2)
-    lu.assertEquals(array.size(a), 10)
-    lu.assertEquals(array.get(a, 5), 5)
-    lu.assertEquals(a:get(2), 2)
-end
-
-function test_python()
-    py_test_module = Python.PyLoad("test")
-    num = py_test_module.number
-    lu.assertEquals(num, 121.55)
-end
 
 function test_pythoncallback()
-    x = py_test_module.callme
-    x()
+    local x = py_module.callme
+    local result = x(nil, true, "vipul", 12)
+    lu.assertEquals(result, nil)
 end
 
--- py_print()
 
 -- os.exit(lu.LuaUnit.run())
 lu.LuaUnit.run()

@@ -1,8 +1,10 @@
 string = "Python"
-number = 121.55
+number = 121
+double = 1.5
 boolean = False
 
 
-def callme():
-    print("From CallMe", flush=True)
-    return 3
+def callme(*args):
+    # print(args)
+    # print("From CallMe", flush=True)
+    return None

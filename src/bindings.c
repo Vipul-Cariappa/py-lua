@@ -5,17 +5,19 @@
 #include <lauxlib.h>
 #include <lualib.h>
 
-// callable.c
-void get_pylua_func(lua_State* L, PyObject* pyfunc, PyObject* pymodule);
+// convert.c
+int PyLua_PythonToLua(lua_State* L, PyObject* pItem, PyObject* pModule);
 
-int PY_module_count = 0;
+int PyLua_PyLoadedModuleCount = 0;
 
-typedef struct PY_module {
+
+typedef struct PyLua_PyModule {
 	PyObject* module;
 	int number;
-} PY_module;
+} PyLua_PyModule;
 
-int PY_load(lua_State* L)
+
+int PyLua_PyLoadModule(lua_State* L)
 {
 	if (!Py_IsInitialized())
 	{
@@ -24,16 +26,17 @@ int PY_load(lua_State* L)
 	}
 
 	const char* module_name = luaL_checkstring(L, 1);
-	PyObject* module = PyImport_ImportModule(module_name);
-	if (module)
+	PyObject* pModule = PyImport_ImportModule(module_name);
+
+	if (pModule)
 	{
-		PY_module_count++;
+		PyLua_PyLoadedModuleCount++;
 
 		// creating lua userdatum from python module
-		size_t nbytes = sizeof(PY_module);
-		PY_module* luapy_object = (PY_module*)lua_newuserdata(L, nbytes);
-		luapy_object->module = module;
-		luapy_object->number = PY_module_count;
+		size_t nbytes = sizeof(PyLua_PyModule);
+		PyLua_PyModule* py_module = (PyLua_PyModule*)lua_newuserdata(L, nbytes);
+		py_module->module = pModule;
+		py_module->number = PyLua_PyLoadedModuleCount;
 
 		// registrying userdatum to lua
 		luaL_getmetatable(L, "Python.Module");
@@ -42,53 +45,52 @@ int PY_load(lua_State* L)
 		return 1;
 	}
 
-	return luaL_error(L, "Some Internal Error Occurred");
+	return luaL_error(L, "Error: Could Not Import the Python Module");
 }
 
-int PY_unload(lua_State* L)
-{
-	PY_module* luapy_object = (PY_module*)luaL_checkudata(L, 1, "Python.Module");
-	luaL_argcheck(L, luapy_object != NULL, 1, "'Python.Module' expected");
-	PY_module_count--;
-	Py_DECREF(luapy_object->module);
 
-	if ((PY_module_count == 0) && (Py_IsInitialized()))
+int PyLua_PyUnloadModule(lua_State* L)
+{
+	PyLua_PyModule* py_module = (PyLua_PyModule*)luaL_checkudata(L, 1, "Python.Module");
+	luaL_argcheck(L, py_module != NULL, 1, "'Python.Module' expected");
+	PyLua_PyLoadedModuleCount--;
+	Py_DECREF(py_module->module);
+
+	if ((PyLua_PyLoadedModuleCount == 0) && (Py_IsInitialized()))
 	{
 		Py_Finalize();
 	}
+
 	return 0;
 }
 
 
-int set(lua_State* L)
+int PyLua_PySet(lua_State* L)
 {
-	return luaL_error(L, "Cannot Assign Values to Python.Module Objects");
+	return luaL_error(L, "Error: Cannot Assign Values to Python.Module Objects");
 }
 
-int get(lua_State* L)
+
+int PyLua_PyGet(lua_State* L)
 {
-	PY_module* luapy_object = (PY_module*)luaL_checkudata(L, 1, "Python.Module");
-	luaL_argcheck(L, luapy_object != NULL, 1, "'Python.Module' expected");
+	PyLua_PyModule* py_module = (PyLua_PyModule*)luaL_checkudata(L, 1, "Python.Module");
+	luaL_argcheck(L, py_module != NULL, 1, "'Python.Module' expected");
 
-	const char* attr_name = luaL_checkstring(L, 2);
-	PyObject* pyitem = PyObject_GetAttrString(luapy_object->module, attr_name);
+	// getting python object of the given name
+	const char* name = luaL_checkstring(L, 2);
+	PyObject* pItem = PyObject_GetAttrString(py_module->module, name);
 
-	if (pyitem)
+	// converting to lua object
+	if (pItem)
 	{
-		if (PyFloat_Check(pyitem))
+		int x = PyLua_PythonToLua(L, pItem, py_module->module);
+		if (x != -1)
 		{
-			double result = PyFloat_AsDouble(pyitem);
-			lua_pushnumber(L, result);
-			Py_DECREF(pyitem);
+			return x;
+		}
 
-			return 1;
-		}
-		else if (PyCallable_Check(pyitem))
-		{
-			get_pylua_func(L, pyitem, luapy_object->module);
-			return 1;
-		}
+		return luaL_error(L, "Error: Problem Occured while converting python object to lua variable.");
 	}
 
-	return luaL_error(L, "Some Error Occurred when getting Python Object");
+	return luaL_error(L, "Error: Some Error Occurred when getting Python Object");
 }
