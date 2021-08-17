@@ -53,3 +53,4 @@ dkms.conf
 
 # User Defined
 tests/pylua.sh
+tests/luaunit.lua
