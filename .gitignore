@@ -50,3 +50,7 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# User Defined
+tests/pylua.sh
+tests/luaunit.lua
