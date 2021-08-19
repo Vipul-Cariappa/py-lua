@@ -5,6 +5,8 @@
 #include <lauxlib.h>
 #include <lualib.h>
 
+// callable.c
+void get_PyFunc(lua_State* L, PyObject* pFunc, PyObject* pModule);
 
 int PyLua_PythonToLua(lua_State* L, PyObject* pItem, PyObject* pModule)
 {

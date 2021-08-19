@@ -17,8 +17,10 @@ static const struct luaL_Reg PY_lib[] = {
 	{NULL, NULL}
 };
 
-__declspec(dllexport) int luaopen_pylua(lua_State* L) {
-
+#if defined(_WIN32)
+	__declspec(dllexport)
+#endif
+int luaopen_pylua(lua_State * L) {
 	// python module
 	luaL_newmetatable(L, "Python.Module");
 	lua_pushstring(L, "__gc");
