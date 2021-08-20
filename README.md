@@ -78,9 +78,9 @@ If you face any problems while building please ask for help [here](https://githu
 - [ ] Calling lua from python (lua bindings for python)
 
 ## Contribution
-Any contribution are welcomed. 
+All contributions are welcomed. 
 You can fork the project and create new PR, if you want to contribute. 
-If the PR is related to a bud, creating new issue before creating new PR is recommend.
+If the PR is related to a bud, creating a issue before creating the PR is recommended.
 
 ## Discussions
 If you have any problems or have any feature request please feel free to post [new discussion](https://github.com/Vipul-Cariappa/py-lua/discussions/new). I will try to get at all of them.
