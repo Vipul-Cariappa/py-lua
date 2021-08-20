@@ -1,6 +1,6 @@
 # py-lua
 Bridge between Python and Lua.
-This project has been started to provide easy binding between python and lua programming languages.
+This project has been started to provide easy binding between python and lua programming languages. Currently tested with lua version 5.3 and 5.4 and python version 3.8.
 
 ### Currently py-lua supports:
 - Importing python module into lua program.
@@ -46,17 +46,23 @@ To compile py-lua in linux. First install the required dependencies:
 
 In ubuntu run
 
-`sudo apt-get install python3-dev lua5.3 liblua5.3-dev gcc -y`
+```bash
+sudo apt-get install python3-dev lua5.3 liblua5.3-dev gcc -y
+```
 
 Clone the repository
 
-`git clone https://github.com/Vipul-Cariappa/py-lua.git`
+```bash
+git clone https://github.com/Vipul-Cariappa/py-lua.git
+```
 
 Build using gcc
 
-`cd py-lua/src`
+```bash 
+cd py-lua/src
 
-`gcc -fPIC -shared -o pylua.so bindings.c callable.c convert.c lua_py.c $(pkg-config --cflags --libs lua5.3) $(pkg-config --cflags --libs python3)`
+gcc -fPIC -shared -o pylua.so bindings.c callable.c convert.c lua_py.c $(pkg-config --cflags --libs lua5.3) $(pkg-config --cflags --libs python3)
+```
 
 Copy the shared library pylua.so file to the working directory of your project.
 
