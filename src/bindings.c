@@ -89,6 +89,7 @@ int PyLua_PyGet(lua_State* L)
 			return x;
 		}
 
+		Py_DECREF(pItem);
 		return luaL_error(L, "Error: Problem Occured while converting python object to lua variable.");
 	}
 
