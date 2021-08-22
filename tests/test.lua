@@ -12,7 +12,7 @@ function test_python_get()
     local d = py_module.string
     lu.assertEquals(a, 121)
     lu.assertEquals(b, 1.5)
-    lu.assertEquals(c, 0)
+    lu.assertEquals(c, false)
     lu.assertEquals(d, "Python")
 end
 

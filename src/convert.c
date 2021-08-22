@@ -10,7 +10,23 @@ void get_PyFunc(lua_State* L, PyObject* pFunc, PyObject* pModule);
 
 int PyLua_PythonToLua(lua_State* L, PyObject* pItem, PyObject* pModule)
 {
-	if (PyNumber_Check(pItem))
+	if (pItem == Py_True)
+	{
+		// to boolean
+		lua_pushboolean(L, 1);
+
+		Py_DECREF(pItem);
+		return 1;
+	}
+	else if (pItem == Py_False)
+	{
+		// to boolean
+		lua_pushboolean(L, 0);
+
+		Py_DECREF(pItem);
+		return 1;
+	}
+	else if (PyNumber_Check(pItem))
 	{
 		// to double
 		double result = PyFloat_AsDouble(pItem);
@@ -62,7 +78,7 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 		// to float
 		double x = lua_tonumber(L, index);
 		pItem = PyFloat_FromDouble(x);
-		
+
 		return pItem;
 	}
 	else if (lua_type(L, index) == LUA_TNIL)
