@@ -38,12 +38,19 @@ int PyLua_PyCallFunc(lua_State* L)
 		{
 			PyLua_PythonToLua(L, pResult, luapy_callable->module);
 			Py_DECREF(pResult);
+
+			Py_DECREF(luapy_callable->module);
+			Py_DECREF(luapy_callable->function);
 			return 1;
 		}
 
+		Py_DECREF(luapy_callable->module);
+		Py_DECREF(luapy_callable->function);
 		return luaL_error(L, "Error: Some Internal Problem");
 	}
 
+	Py_DECREF(luapy_callable->module);
+	Py_DECREF(luapy_callable->function);
 	return luaL_error(L, "Error: Some Internal Problem");
 }
 
