@@ -15,7 +15,6 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem, PyObject* pModule)
 		// to boolean
 		lua_pushboolean(L, 1);
 
-		Py_DECREF(pItem);
 		return 1;
 	}
 	else if (pItem == Py_False)
@@ -23,7 +22,6 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem, PyObject* pModule)
 		// to boolean
 		lua_pushboolean(L, 0);
 
-		Py_DECREF(pItem);
 		return 1;
 	}
 	else if (PyNumber_Check(pItem))
@@ -32,7 +30,6 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem, PyObject* pModule)
 		double result = PyFloat_AsDouble(pItem);
 		lua_pushnumber(L, result);
 
-		Py_DECREF(pItem);
 		return 1;
 	}
 	else if (PyUnicode_Check(pItem))
@@ -48,7 +45,6 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem, PyObject* pModule)
 			Py_DECREF(encodedString);
 		}
 
-		Py_DECREF(pItem);
 		return 1;
 	}
 	else if (pItem == Py_None)
@@ -56,7 +52,6 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem, PyObject* pModule)
 		// to function
 		lua_pushnil(L);
 
-		Py_DECREF(pItem);
 		return 1;
 	}
 	else if (PyCallable_Check(pItem))
