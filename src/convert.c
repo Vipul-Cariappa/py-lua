@@ -95,6 +95,51 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 		pItem = PyUnicode_FromString(x);
 		return pItem;
 	}
+	else if (lua_type(L, index) == LUA_TTABLE)
+	{
+		// Push another reference to the table on top of the stack (so we know
+		// where it is, and this function can work for negative, positive and
+		// pseudo indices
+		lua_pushvalue(L, index);
+		// stack now contains: -1 => table
+
+		lua_pushnil(L);
+		// stack now contains: -1 => nil; -2 => table
+
+		// length of table
+		int len = luaL_len(L, index);
+
+		pItem = PyDict_New();
+
+		if (pItem)
+		{
+			PyObject *pKey, *pValue;
+
+			while (lua_next(L, -2))
+			{
+				// stack now contains: -1 => value; -2 => key; -3 => table
+				// copy the key so that lua_tostring does not modify the original
+				lua_pushvalue(L, -2);
+				
+				// stack now contains: -1 => key; -2 => value; -3 => key; -4 => table
+				pKey = PyLua_LuaToPython(L, -1);
+				pValue = PyLua_LuaToPython(L, -2);
+				PyDict_SetItem(pItem, pKey, pValue);
+
+				// pop value + copy of key, leaving original key
+				lua_pop(L, 2);
+				// stack now contains: -1 => key; -2 => table
+			}
+			// stack now contains: -1 => table (when lua_next returns 0 it pops the key
+			// but does not push anything.)
+			// Pop table
+			lua_pop(L, 1);
+			// Stack is now the same as it was on entry to this function
+
+			return pItem;
+
+		}
+	}
 
 	return NULL;
 }
