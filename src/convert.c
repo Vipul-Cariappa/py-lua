@@ -82,15 +82,72 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem, PyObject* pModule)
 				PyLua_PythonToLua(L, pValue, pModule); // -1 => value  -2 => key
 
 				lua_settable(L, -3);
-
-				Py_DECREF(pKey);
-				Py_DECREF(pValue);
 			}
 		}
 		Py_DECREF(pKeyList);
 
 		return 1;
 
+	}
+	else if (PyList_Check(pItem))
+	{
+		// to list using lua table
+		lua_newtable(L);
+
+		PyObject* pListElement;
+		Py_ssize_t len = PyList_Size(pItem);
+
+		for (int i = 0; i < len; i++)
+		{
+			pListElement = PyList_GetItem(pItem, i);
+			PyLua_PythonToLua(L, pListElement, pModule);
+
+			lua_seti(L, -2, i + 1);
+		}
+
+		return 1;
+	}
+	else if (PyTuple_Check(pItem))
+	{
+		// to list using lua table
+		lua_newtable(L);
+
+		PyObject* pTupleElement;
+		Py_ssize_t len = PyTuple_Size(pItem);
+
+		for (int i = 0; i < len; i++)
+		{
+			pTupleElement = PyTuple_GetItem(pItem, i);
+			PyLua_PythonToLua(L, pTupleElement, pModule);
+
+			lua_seti(L, -2, i + 1);
+		}
+
+		return 1;
+	}
+	else if (PySet_Check(pItem))
+	{
+		// to list using lua table
+		lua_newtable(L);
+
+		PyObject* pSetIter = PyObject_GetIter(pItem);
+		PyObject* pSetElement;
+
+		int i = 1;
+
+		while ((pSetElement = PyIter_Next(pSetIter)))
+		{
+			PyLua_PythonToLua(L, pSetElement, pModule);
+
+			lua_seti(L, -2, i);
+
+			Py_DECREF(pSetElement);
+			i++;
+		}
+
+		Py_DECREF(pSetIter);
+
+		return 1;
 	}
 
 	return -1;
