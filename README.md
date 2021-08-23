@@ -5,6 +5,7 @@ This project has been started to provide easy binding between python and lua pro
 ### Currently py-lua supports:
 - Importing python module into lua program.
 - Getting string, float, boolean and None data types from python.
+- Convertion between python dict and lua table.
 - Calling and extracting return values of functions with simple data types.
 
 ## Example

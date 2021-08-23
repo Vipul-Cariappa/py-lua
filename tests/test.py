@@ -8,3 +8,11 @@ def callme(*args):
     # print(args)
     # print("From CallMe", flush=True)
     return None
+
+table = {
+    "a": "AA",
+    "b": "BB",
+    "c": "CC",
+    "d": "DD",
+    10: 10
+}

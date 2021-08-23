@@ -23,6 +23,38 @@ function test_pythoncallback()
     lu.assertEquals(result, nil)
 end
 
+function test_lua_table_convertion()
+    local table = {
+        a = "A1",
+        b = "B1",
+        c = "C1",
+        d = "D1",
+        e = "E1",
+    }
+
+    local array = {1, 2, 3, 4, 5, 6}
+    py_module.callme(table, array)
+end
+
+function test_python_dict_convertion()
+
+    local py_table = py_module.table
+
+    local table = {
+        a="AA",
+        b="BB",
+        c="CC",
+        d="DD",
+    }
+    table[10.0] = 10.0
+
+    lu.assertEquals(table, py_table)
+
+    -- for k,v in pairs(table) do
+    --     print(k, " => ",v)
+    -- end
+
+end
 
 -- os.exit(lu.LuaUnit.run())
 lu.LuaUnit.run()

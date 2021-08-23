@@ -60,6 +60,38 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem, PyObject* pModule)
 		get_PyFunc(L, pItem, pModule);
 		return 1;
 	}
+	else if (PyDict_Check(pItem))
+	{
+		// to table
+		PyObject* pKeyList = PyDict_Keys(pItem);
+
+		lua_newtable(L);
+
+		if (pKeyList)
+		{
+			PyObject* pKey, * pValue;
+
+			Py_ssize_t len = PyList_Size(pKeyList);
+
+			for (int i = 0; i < len; i++)
+			{
+				pKey = PyList_GetItem(pKeyList, i);
+				pValue = PyDict_GetItem(pItem, pKey);
+
+				PyLua_PythonToLua(L, pKey, pModule); // -1 => key
+				PyLua_PythonToLua(L, pValue, pModule); // -1 => value  -2 => key
+
+				lua_settable(L, -3);
+
+				Py_DECREF(pKey);
+				Py_DECREF(pValue);
+			}
+		}
+		Py_DECREF(pKeyList);
+
+		return 1;
+
+	}
 
 	return -1;
 }
@@ -94,6 +126,53 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 		const char* x = lua_tostring(L, index);
 		pItem = PyUnicode_FromString(x);
 		return pItem;
+	}
+	else if (lua_type(L, index) == LUA_TTABLE)
+	{
+		// Push another reference to the table on top of the stack (so we know
+		// where it is, and this function can work for negative, positive and
+		// pseudo indices
+		lua_pushvalue(L, index);
+		// stack now contains: -1 => table
+
+		lua_pushnil(L);
+		// stack now contains: -1 => nil; -2 => table
+
+		// length of table
+		int len = luaL_len(L, index);
+
+		pItem = PyDict_New();
+
+		if (pItem)
+		{
+			PyObject* pKey, * pValue;
+
+			while (lua_next(L, -2))
+			{
+				// stack now contains: -1 => value; -2 => key; -3 => table
+				// copy the key so that lua_tostring does not modify the original
+				lua_pushvalue(L, -2);
+
+				// stack now contains: -1 => key; -2 => value; -3 => key; -4 => table
+				pKey = PyLua_LuaToPython(L, -1);
+				pValue = PyLua_LuaToPython(L, -2);
+				PyDict_SetItem(pItem, pKey, pValue);
+				Py_DECREF(pKey);
+				Py_DECREF(pValue);
+
+				// pop value + copy of key, leaving original key
+				lua_pop(L, 2);
+				// stack now contains: -1 => key; -2 => table
+			}
+			// stack now contains: -1 => table (when lua_next returns 0 it pops the key
+			// but does not push anything.)
+			// Pop table
+			lua_pop(L, 1);
+			// Stack is now the same as it was on entry to this function
+
+			return pItem;
+
+		}
 	}
 
 	return NULL;
