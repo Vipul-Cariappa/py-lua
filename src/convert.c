@@ -60,6 +60,38 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem, PyObject* pModule)
 		get_PyFunc(L, pItem, pModule);
 		return 1;
 	}
+	else if (PyDict_Check(pItem))
+	{
+		// to table
+		PyObject* pKeyList = PyDict_Keys(pItem);
+
+		lua_newtable(L);
+
+		if (pKeyList)
+		{
+			PyObject* pKey, * pValue;
+
+			Py_ssize_t len = PyList_Size(pKeyList);
+
+			for (int i = 0; i < len; i++)
+			{
+				pKey = PyList_GetItem(pKeyList, i);
+				pValue = PyDict_GetItem(pItem, pKey);
+
+				PyLua_PythonToLua(L, pKey, pModule); // -1 => key
+				PyLua_PythonToLua(L, pValue, pModule); // -1 => value  -2 => key
+
+				lua_settable(L, -3);
+
+				Py_DECREF(pKey);
+				Py_DECREF(pValue);
+			}
+		}
+		Py_DECREF(pKeyList);
+
+		return 1;
+
+	}
 
 	return -1;
 }
@@ -113,18 +145,20 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 
 		if (pItem)
 		{
-			PyObject *pKey, *pValue;
+			PyObject* pKey, * pValue;
 
 			while (lua_next(L, -2))
 			{
 				// stack now contains: -1 => value; -2 => key; -3 => table
 				// copy the key so that lua_tostring does not modify the original
 				lua_pushvalue(L, -2);
-				
+
 				// stack now contains: -1 => key; -2 => value; -3 => key; -4 => table
 				pKey = PyLua_LuaToPython(L, -1);
 				pValue = PyLua_LuaToPython(L, -2);
 				PyDict_SetItem(pItem, pKey, pValue);
+				Py_DECREF(pKey);
+				Py_DECREF(pValue);
 
 				// pop value + copy of key, leaving original key
 				lua_pop(L, 2);
