@@ -56,5 +56,20 @@ function test_python_dict_convertion()
 
 end
 
+function test_python_list_conversion()
+    local py_list = py_module.pyList
+    lu.assertEquals({"List", 12}, py_list)
+end
+
+function test_python_tuple_conversion()
+    local py_tuple = py_module.pyTuple
+    lu.assertEquals({"Tuple", 12}, py_tuple)
+end
+
+function test_python_set_conversion()
+    local py_set = py_module.pySet    
+    lu.assertEquals({12, "Set"}, py_set)
+end
+
 -- os.exit(lu.LuaUnit.run())
 lu.LuaUnit.run()
