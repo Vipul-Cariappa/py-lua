@@ -8,7 +8,11 @@
 // convert.c
 int PyLua_PythonToLua(lua_State* L, PyObject* pItem, PyObject* pModule);
 
+// callable.c
+PyMODINIT_FUNC PyInit_pylua(void);
+
 int PyLua_PyLoadedModuleCount = 0;
+PyObject* PyLua_pylua_module;
 
 
 typedef struct PyLua_PyModule {
@@ -21,7 +25,17 @@ int PyLua_PyLoadModule(lua_State* L)
 {
 	if (!Py_IsInitialized())
 	{
+		if (PyImport_AppendInittab("pylua", PyInit_pylua) == -1) {
+			return luaL_error(L, "Error: could not extend in-built modules table");
+		}
+
 		Py_Initialize();
+
+		PyLua_pylua_module = PyImport_ImportModule("pylua");
+		if (!PyLua_pylua_module) {
+			return luaL_error(L, "Error: could not import module 'pylua'");
+		}
+
 		PySys_SetPath(L".");
 	}
 

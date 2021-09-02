@@ -68,3 +68,27 @@ void get_PyFunc(lua_State* L, PyObject* pFunc, PyObject* pModule)
 
 	lua_pushcclosure(L, PyLua_PyCallFunc, 1);
 }
+
+PyObject* get_LuaFunc_Wrapper(PyObject* self, PyObject* args, PyObject* kwargs)
+{
+	printf("From Python C function\n");
+	Py_RETURN_NONE;
+}
+
+static PyMethodDef LUA_lib[] = {
+	{"lua_func",  get_LuaFunc_Wrapper, METH_VARARGS | METH_KEYWORDS, "Placeholder for lua function."},
+	{NULL, NULL, 0, NULL}
+};
+
+static struct PyModuleDef LUA_module = {
+	PyModuleDef_HEAD_INIT,
+	"pylua",
+	"pylua doc",
+	-1,
+	LUA_lib
+};
+
+PyMODINIT_FUNC PyInit_pylua(void)
+{
+	return PyModule_Create(&LUA_module);
+}

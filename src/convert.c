@@ -8,6 +8,7 @@
 // callable.c
 void get_PyFunc(lua_State* L, PyObject* pFunc, PyObject* pModule);
 
+
 int PyLua_PythonToLua(lua_State* L, PyObject* pItem, PyObject* pModule)
 {
 	if (pItem == Py_True)
@@ -230,6 +231,10 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 			return pItem;
 
 		}
+	}
+	else if (lua_type(L, index) == LUA_TFUNCTION)
+	{
+		Py_RETURN_NONE;
 	}
 
 	return NULL;

@@ -68,7 +68,17 @@ end
 
 function test_python_set_conversion()
     local py_set = py_module.pySet    
+    -- lu.assertEquals({"Set", 12}, py_set)
     lu.assertEquals({12, "Set"}, py_set)
+end
+
+function nothing()
+    print("From Lua Function")
+    return nil
+end
+
+function test_lua_function_convert()
+    py_module.callme(nothing)
 end
 
 -- os.exit(lu.LuaUnit.run())
