@@ -1,3 +1,12 @@
+import pylua
+
+# print(dir(pylua))
+# _x = pylua.lua_function_wrapper(1000)
+# _y = pylua.lua_function_wrapper(5000)
+# print(_x)
+# print(_x(2))
+# print(_y(2))
+
 string = "Python"
 number = 121
 double = 1.5
@@ -28,6 +37,15 @@ pySet = {
 
 
 def callme(*args):
-    # print(args)
-    # print("From CallMe", flush=True)
+    # print("From CallMe", flush=True, end=" ")
+    # print(args, flush=True)
     return None
+
+
+def get_called(func):
+    # if func == None:
+    #     print("got none")
+    # else:
+    #     func()
+    print("got: ", func)
+    print(func("Crazy"))

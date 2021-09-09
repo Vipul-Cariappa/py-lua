@@ -6,10 +6,11 @@
 #include <lualib.h>
 
 // callable.c
-void get_PyFunc(lua_State* L, PyObject* pFunc, PyObject* pModule);
+void get_PyFunc(lua_State* L, PyObject* pFunc);
+PyObject* get_LuaFunc(lua_State* L, int index);
 
 
-int PyLua_PythonToLua(lua_State* L, PyObject* pItem, PyObject* pModule)
+int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
 {
 	if (pItem == Py_True)
 	{
@@ -58,7 +59,7 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem, PyObject* pModule)
 	else if (PyCallable_Check(pItem))
 	{
 		// to function
-		get_PyFunc(L, pItem, pModule);
+		get_PyFunc(L, pItem);
 		return 1;
 	}
 	else if (PyDict_Check(pItem))
@@ -79,8 +80,8 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem, PyObject* pModule)
 				pKey = PyList_GetItem(pKeyList, i);
 				pValue = PyDict_GetItem(pItem, pKey);
 
-				PyLua_PythonToLua(L, pKey, pModule); // -1 => key
-				PyLua_PythonToLua(L, pValue, pModule); // -1 => value  -2 => key
+				PyLua_PythonToLua(L, pKey); // -1 => key
+				PyLua_PythonToLua(L, pValue); // -1 => value  -2 => key
 
 				lua_settable(L, -3);
 			}
@@ -101,7 +102,7 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem, PyObject* pModule)
 		for (int i = 0; i < len; i++)
 		{
 			pListElement = PyList_GetItem(pItem, i);
-			PyLua_PythonToLua(L, pListElement, pModule);
+			PyLua_PythonToLua(L, pListElement);
 
 			lua_seti(L, -2, i + 1);
 		}
@@ -119,7 +120,7 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem, PyObject* pModule)
 		for (int i = 0; i < len; i++)
 		{
 			pTupleElement = PyTuple_GetItem(pItem, i);
-			PyLua_PythonToLua(L, pTupleElement, pModule);
+			PyLua_PythonToLua(L, pTupleElement);
 
 			lua_seti(L, -2, i + 1);
 		}
@@ -138,7 +139,7 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem, PyObject* pModule)
 
 		while ((pSetElement = PyIter_Next(pSetIter)))
 		{
-			PyLua_PythonToLua(L, pSetElement, pModule);
+			PyLua_PythonToLua(L, pSetElement);
 
 			lua_seti(L, -2, i);
 
@@ -197,13 +198,14 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 		// stack now contains: -1 => nil; -2 => table
 
 		// length of table
-		int len = luaL_len(L, index);
+		//int len = luaL_len(L, index);
 
 		pItem = PyDict_New();
 
 		if (pItem)
 		{
-			PyObject* pKey, * pValue;
+			PyObject* pKey;
+			PyObject* pValue;
 
 			while (lua_next(L, -2))
 			{
@@ -234,7 +236,9 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 	}
 	else if (lua_type(L, index) == LUA_TFUNCTION)
 	{
-		Py_RETURN_NONE;
+		lua_getglobal(L, "test_python_get");
+		lua_pcall(L, 0, 0, 0);
+		return get_LuaFunc(L, index);
 	}
 
 	return NULL;

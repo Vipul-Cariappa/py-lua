@@ -6,13 +6,19 @@
 #include <lualib.h>
 
 // convert.c
-int PyLua_PythonToLua(lua_State* L, PyObject* pItem, PyObject* pModule);
+int PyLua_PythonToLua(lua_State* L, PyObject* pItem);
 
 // callable.c
 PyMODINIT_FUNC PyInit_pylua(void);
 
 int PyLua_PyLoadedModuleCount = 0;
-PyObject* PyLua_pylua_module;
+extern PyObject* PyLua_pylua_module;
+
+
+//PyObject* get_pylua_module()
+//{
+//	return PyLua_pylua_module;
+//}
 
 
 typedef struct PyLua_PyModule {
@@ -97,7 +103,7 @@ int PyLua_PyGet(lua_State* L)
 	// converting to lua object
 	if (pItem)
 	{
-		int x = PyLua_PythonToLua(L, pItem, py_module->module);
+		int x = PyLua_PythonToLua(L, pItem);
 		if (x != -1)
 		{
 			return x;
