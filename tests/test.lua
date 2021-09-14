@@ -6,7 +6,6 @@ py_module = Python.PyLoad("test")
 
 
 function test_python_get()
-    print("From test_python_get")
     local a = py_module.number
     local b = py_module.double
     local c = py_module.boolean
@@ -19,7 +18,6 @@ end
 
 
 function test_pythoncallback()
-    print("From test_pythoncallback")
     local x = py_module.callme
     local result = x(nil, true, "vipul", 12)
     lu.assertEquals(result, nil)
@@ -91,10 +89,10 @@ function lua_print(x)
 end
 
 function test_get_called()
-    -- local o = 4;
-    -- function nested()
-    --     print(o+3);
-    -- end
+    local o = 4;
+    function nested()
+        print(o+3);
+    end
     py_module.get_called(lua_print)
     -- py_module.get_called(nested)
 end

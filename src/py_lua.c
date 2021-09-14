@@ -23,7 +23,17 @@ typedef struct PyLua_LuaFunc {
 
 PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwargs)
 {
-	return exec_LuaFunc(self->a, args, kwargs);
+	lua_State* L = (lua_State*)self->a;
+
+	lua_getglobal(L, "lua_print");
+
+	long x = PyLong_AsLong(PyTuple_GetItem(args, 0));
+	lua_pushinteger(L, x);
+
+	lua_pcall(L, 1, -1, 0);
+
+	Py_RETURN_FALSE;
+	//return exec_LuaFunc(self->a, args, kwargs);
 }
 
 PyObject* get_LuaFunc_Wrapper(PyLua_LuaFunc* self, PyObject* args, PyObject* kwargs)

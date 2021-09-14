@@ -8,6 +8,7 @@
 // callable.c
 void get_PyFunc(lua_State* L, PyObject* pFunc);
 PyObject* get_LuaFunc(lua_State* L, int index);
+PyObject* PyLua_pylua_module;
 
 
 int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
@@ -236,9 +237,15 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 	}
 	else if (lua_type(L, index) == LUA_TFUNCTION)
 	{
-		lua_getglobal(L, "test_python_get");
-		lua_pcall(L, 0, 0, 0);
-		return get_LuaFunc(L, index);
+		uintptr_t prtvalue = L;
+
+		PyObject* func = PyObject_GetAttrString(PyLua_pylua_module, "lua_function_wrapper");
+
+		PyObject* pArgs = Py_BuildValue("(K)", prtvalue);
+
+		return PyObject_CallObject(func, pArgs);
+
+		//return get_LuaFunc(L, index);
 	}
 
 	return NULL;
