@@ -237,15 +237,15 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 	}
 	else if (lua_type(L, index) == LUA_TFUNCTION)
 	{
-		uintptr_t prtvalue = L;
+		uintptr_t lStack_prt = L;
+		uintptr_t lFunc_prt = lua_topointer(L, index);
 
 		PyObject* func = PyObject_GetAttrString(PyLua_pylua_module, "lua_function_wrapper");
 
-		PyObject* pArgs = Py_BuildValue("(K)", prtvalue);
+		PyObject* pArgs = Py_BuildValue("(KK)", lStack_prt, lFunc_prt);
 
 		return PyObject_CallObject(func, pArgs);
 
-		//return get_LuaFunc(L, index);
 	}
 
 	return NULL;

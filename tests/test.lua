@@ -76,7 +76,7 @@ function nothing()
     return nil
 end
 
-function test_lua_function_convert()
+function test_lua_function_convert(...)
     py_module.callme(nothing)
 end
 
@@ -93,8 +93,8 @@ function test_get_called()
     function nested()
         print(o+3);
     end
-    py_module.get_called(lua_print)
-    -- py_module.get_called(nested)
+    py_module.get_called(nested)
+    -- py_module.get_called(lua_print)
 end
 
 -- os.exit(lu.LuaUnit.run())
