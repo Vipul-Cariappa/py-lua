@@ -5,6 +5,8 @@
 #include <lauxlib.h>
 #include <lualib.h>
 
+#include <wchar.h>
+
 // convert.c
 int PyLua_PythonToLua(lua_State* L, PyObject* pItem, PyObject* pModule);
 
@@ -22,7 +24,32 @@ int PyLua_PyLoadModule(lua_State* L)
 	if (!Py_IsInitialized())
 	{
 		Py_Initialize();
-		PySys_SetPath(L".");
+		
+		wchar_t* path = Py_GetPath();
+
+		#if defined(_WIN32)
+		wchar_t new_path[800];
+		if (!new_path)
+		{
+			exit(-1);
+		}
+		new_path[0] = L'.';
+		new_path[1] = L';';
+		new_path[2] = L'\0';
+		#else
+		wchar_t new_path[800];
+		if (!new_path)
+		{
+			exit(-1);
+		}
+		new_path[0] = L'.';
+		new_path[1] = L':';
+		new_path[2] = L'\0';
+		#endif
+
+		wcsncat(new_path, path, wcslen(path));
+
+		PySys_SetPath(new_path);
 	}
 
 	const char* module_name = luaL_checkstring(L, 1);
