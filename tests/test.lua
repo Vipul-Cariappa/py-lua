@@ -93,7 +93,7 @@ function test_get_called()
     function nested()
         print(o+3);
     end
-    py_module.get_called(nested)
+    -- py_module.get_called(nested)
     -- py_module.get_called(lua_print)
 end
 

@@ -1,12 +1,3 @@
-import pylua
-
-# print(dir(pylua))
-# _x = pylua.lua_function_wrapper(1000)
-# _y = pylua.lua_function_wrapper(5000)
-# print(_x)
-# print(_x(2))
-# print(_y(2))
-
 string = "Python"
 number = 121
 double = 1.5
