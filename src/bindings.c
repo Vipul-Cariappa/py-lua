@@ -39,13 +39,6 @@ int PyLua_PyLoadModule(lua_State* L)
 
 		Py_Initialize();
 
-		PyLua_pylua_module = PyImport_ImportModule("pylua");
-		if (!PyLua_pylua_module) {
-			return luaL_error(L, "Error: could not import module 'pylua'");
-		}
-
-		PySys_SetPath(L".");
-		
 		wchar_t* path = Py_GetPath();
 
 		#if defined(_WIN32)
@@ -71,6 +64,12 @@ int PyLua_PyLoadModule(lua_State* L)
 		wcsncat(new_path, path, wcslen(path));
 
 		PySys_SetPath(new_path);
+
+		PyLua_pylua_module = PyImport_ImportModule("pylua");
+		if (!PyLua_pylua_module) {
+			return luaL_error(L, "Error: could not import module 'pylua'");
+		}
+
 	}
 
 	const char* module_name = luaL_checkstring(L, 1);
