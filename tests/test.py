@@ -39,4 +39,4 @@ def get_called(func):
     # else:
     #     func()
     print("got: ", func)
-    print(func(5))
+    print(func(55))

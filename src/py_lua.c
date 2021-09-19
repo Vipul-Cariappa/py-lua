@@ -26,27 +26,17 @@ PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwargs)
 {
 	lua_State* L = (lua_State*)self->lStack_prt;
 
-
-	// to be removed
-	
-	/*lua_getglobal(L, "lua_print");
-
-	long x = PyLong_AsLong(PyTuple_GetItem(args, 0));
-	lua_pushinteger(L, x);
-
-	lua_pcall(L, 1, -1, 0);*/
-
-	// -------------
+	// make sure size of stact is the same at exit
+	int stack_size = lua_gettop(L);
 
 	// ensure space for all operations
 	Py_ssize_t arg_len = PyTuple_Size(args);
 	lua_checkstack(L, 5 + arg_len);
 
-	// make sure size of stact is the same at exit
-	int stack_size = lua_gettop(L);
 	
 	// error message if function is not found
 	int found_func = 0;
+	PyObject* return_value = NULL;
 
 	// get list of variables from lua
 	lua_getglobal(L, "_G");
@@ -56,7 +46,6 @@ PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwargs)
 	// iterate over them to find the function
 	while (lua_next(L, -2))
 	{
-		PyObject* return_value;
 
 		if (lua_topointer(L, -1) == self->lFunc_prt)
 		{
@@ -91,18 +80,23 @@ PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwargs)
 			else if (return_len == 1)
 			{
 				return_value = PyLua_LuaToPython(L, -1);
+				lua_pop(L, 1);
 			}
 			else
 			{
 				// to be implemented
 				Py_INCREF(Py_False);
 				return_value = Py_False;
+
+				lua_pop(L, lua_gettop(L) - 3);
 			}
 
 		}
-
+		
 		lua_pop(L, 1);
 	}
+	
+	lua_pop(L, 1);
 
 	if (!found_func)
 	{
@@ -116,9 +110,8 @@ PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwargs)
 		return luaL_error(L, "Error: Stack size not same");
 	}
 
-
-	//Py_RETURN_FALSE;
-	//return exec_LuaFunc(self->a, args, kwargs);
+	return return_value;
+	
 }
 
 PyObject* get_LuaFunc_Wrapper(PyLua_LuaFunc* self, PyObject* args, PyObject* kwargs)
