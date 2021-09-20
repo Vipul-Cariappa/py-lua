@@ -5,9 +5,55 @@
 #include <lauxlib.h>
 #include <lualib.h>
 
-// callable.c
-void get_PyFunc(lua_State* L, PyObject* pFunc);
+// bindings.c
 PyObject* PyLua_pylua_module;
+int PyLua_PyCallFunc(lua_State* L);
+PyObject* PyLua_LuaToPython(lua_State* L, int index);
+int PyLua_PythonToLua(lua_State* L, PyObject* pItem);
+
+typedef struct PyLua_PyCallable {
+	PyObject* function;
+} PyLua_PyCallable;
+
+
+int PyLua_PyCallFunc(lua_State* L)
+{
+	int args_count = lua_gettop(L);
+	PyLua_PyCallable* py_callable = (PyLua_PyCallable*)lua_touserdata(L, lua_upvalueindex(1));
+
+	PyObject* pArgs = PyTuple_New(args_count);
+	PyObject* pItem;
+
+	if (pArgs)
+	{
+		for (int i = 0, j = 1; i < args_count; i++, j++)
+		{
+			pItem = PyLua_LuaToPython(L, j);
+			PyTuple_SetItem(pArgs, i, pItem);
+		}
+
+		PyObject* pResult = PyObject_CallObject(py_callable->function, pArgs);
+		Py_DECREF(pArgs);
+		if (pResult)
+		{
+			PyLua_PythonToLua(L, pResult);
+			Py_DECREF(pResult);
+
+			Py_DECREF(py_callable->function);
+			return 1;
+		}
+		else
+		{
+			PyErr_Print();
+			Py_DECREF(py_callable->function);
+			return luaL_error(L, "Error: While executing function\n");
+		}
+
+	}
+
+	Py_DECREF(py_callable->function);
+	return luaL_error(L, "Error: Memory Error\n");
+}
 
 
 int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
@@ -58,8 +104,15 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
 	}
 	else if (PyCallable_Check(pItem))
 	{
-		// to function
-		get_PyFunc(L, pItem);
+		// creating new lua python callable
+		size_t nbytes = sizeof(PyLua_PyCallable);
+		PyLua_PyCallable* py_callable = (PyLua_PyCallable*)lua_newuserdata(L, nbytes);
+		py_callable->function = pItem;
+
+		Py_INCREF(pItem);
+
+		lua_pushcclosure(L, PyLua_PyCallFunc, 1);
+
 		return 1;
 	}
 	else if (PyDict_Check(pItem))
@@ -104,7 +157,7 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
 			pListElement = PyList_GetItem(pItem, i);
 			PyLua_PythonToLua(L, pListElement);
 
-			lua_seti(L, -2, i + 1);
+			lua_seti(L, -2, (lua_Integer)i + 1);
 		}
 
 		return 1;
@@ -122,7 +175,7 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
 			pTupleElement = PyTuple_GetItem(pItem, i);
 			PyLua_PythonToLua(L, pTupleElement);
 
-			lua_seti(L, -2, i + 1);
+			lua_seti(L, -2, (lua_Integer)i + 1);
 		}
 
 		return 1;

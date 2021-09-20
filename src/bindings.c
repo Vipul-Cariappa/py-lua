@@ -10,7 +10,7 @@
 // convert.c
 int PyLua_PythonToLua(lua_State* L, PyObject* pItem);
 
-// callable.c
+// py_lua.c
 PyMODINIT_FUNC PyInit_pylua(void);
 
 int PyLua_PyLoadedModuleCount = 0;

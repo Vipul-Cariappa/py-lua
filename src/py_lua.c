@@ -14,10 +14,12 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index);
 
 typedef struct PyLua_LuaFunc {
 	PyObject_HEAD
-	void* lStack_prt;
+		void* lStack_prt;
 	void* lFunc_prt;
 } PyLua_LuaFunc;
 
+
+static PyObject* LuaError;
 
 PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwargs)
 {
@@ -30,14 +32,14 @@ PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwargs)
 	Py_ssize_t arg_len = PyTuple_Size(args);
 	lua_checkstack(L, 5 + arg_len);
 
-	
+
 	// error message if function is not found
 	int found_func = 0;
 	PyObject* return_value = NULL;
 
 	// get list of variables from lua
 	lua_getglobal(L, "_G");
-	
+
 	lua_pushnil(L);
 
 	// iterate over them to find the function
@@ -63,8 +65,10 @@ PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwargs)
 			// call the function
 			if (lua_pcall(L, arg_len, LUA_MULTRET, 0) == LUA_ERRRUN)
 			{
-				printf("Error Msg: %s\n", lua_tostring(L, -1));
-				return luaL_error(L, "Error: While calling the lua function.");
+				// PyExc_Exception 
+				PyErr_SetString(PyExc_Exception, lua_tostring(L, -1));
+				//return luaL_error(L, "Error: While calling the lua function.");
+				return NULL;
 			}
 
 			int return_len = lua_gettop(L) - current_stack;
@@ -89,10 +93,10 @@ PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwargs)
 			}
 
 		}
-		
+
 		lua_pop(L, 1);
 	}
-	
+
 	lua_pop(L, 1);
 
 	if (!found_func)
@@ -108,7 +112,7 @@ PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwargs)
 	}
 
 	return return_value;
-	
+
 }
 
 PyObject* get_LuaFunc_Wrapper(PyLua_LuaFunc* self, PyObject* args, PyObject* kwargs)
@@ -163,9 +167,18 @@ PyMODINIT_FUNC PyInit_pylua(void)
 		return NULL;
 	}
 
+
 	Py_INCREF(&MyObject_Type);
 	if (PyModule_AddObject(m, "lua_function_wrapper", (PyObject*)&MyObject_Type) < 0) {
 		Py_DECREF(&MyObject_Type);
+		Py_DECREF(m);
+		return NULL;
+	}
+
+	LuaError = PyErr_NewException("pylua.LuaError", NULL, NULL);
+	if (PyModule_AddObject(m, "error", LuaError) < 0) {
+		Py_XDECREF(LuaError);
+		Py_CLEAR(LuaError);
 		Py_DECREF(m);
 		return NULL;
 	}

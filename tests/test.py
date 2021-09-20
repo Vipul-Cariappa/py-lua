@@ -39,4 +39,9 @@ def get_called(func):
     # else:
     #     func()
     print("got: ", func)
-    print(func(55))
+    try:
+        print(func(55))
+    except:
+        print("Lua function errored out")
+
+    func(55)
