@@ -143,9 +143,6 @@ static PyTypeObject MyObject_Type = {
 	.tp_call = call_LuaFunc,
 };
 
-//static PyMethodDef LUA_lib[] = {
-//	{NULL, NULL, 0, NULL}
-//};
 
 static struct PyModuleDef LUA_module = {
 	PyModuleDef_HEAD_INIT,

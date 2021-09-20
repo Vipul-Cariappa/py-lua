@@ -17,12 +17,6 @@ int PyLua_PyLoadedModuleCount = 0;
 extern PyObject* PyLua_pylua_module;
 
 
-//PyObject* get_pylua_module()
-//{
-//	return PyLua_pylua_module;
-//}
-
-
 typedef struct PyLua_PyModule {
 	PyObject* module;
 	int number;

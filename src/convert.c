@@ -7,7 +7,6 @@
 
 // callable.c
 void get_PyFunc(lua_State* L, PyObject* pFunc);
-PyObject* get_LuaFunc(lua_State* L, int index);
 PyObject* PyLua_pylua_module;
 
 
