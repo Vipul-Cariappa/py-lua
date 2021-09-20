@@ -20,6 +20,7 @@ extern PyObject* PyLua_pylua_module;
 typedef struct PyLua_PyModule {
 	PyObject* module;
 	int number;
+	int loaded;
 } PyLua_PyModule;
 
 
@@ -78,6 +79,7 @@ int PyLua_PyLoadModule(lua_State* L)
 		PyLua_PyModule* py_module = (PyLua_PyModule*)lua_newuserdata(L, nbytes);
 		py_module->module = pModule;
 		py_module->number = PyLua_PyLoadedModuleCount;
+		py_module->loaded = 1;
 
 		// registrying userdatum to lua
 		luaL_getmetatable(L, "Python.Module");
@@ -93,9 +95,20 @@ int PyLua_PyLoadModule(lua_State* L)
 int PyLua_PyUnloadModule(lua_State* L)
 {
 	PyLua_PyModule* py_module = (PyLua_PyModule*)luaL_checkudata(L, 1, "Python.Module");
-	luaL_argcheck(L, py_module != NULL, 1, "'Python.Module' expected");
-	PyLua_PyLoadedModuleCount--;
-	Py_DECREF(py_module->module);
+	luaL_argcheck(L, py_module != NULL, 1, "Error: 'Python.Module' expected");
+
+	if (py_module->module && py_module->loaded)
+	{
+		PyLua_PyLoadedModuleCount--;
+		py_module->loaded = 0;
+
+		Py_DECREF(py_module->module);
+	}
+	else
+	{
+		return luaL_error(L, "Error: Specified Python.Module has already been unloaded.");
+	}
+
 
 	if ((PyLua_PyLoadedModuleCount == 0) && (Py_IsInitialized()))
 	{
@@ -117,6 +130,11 @@ int PyLua_PyGet(lua_State* L)
 	PyLua_PyModule* py_module = (PyLua_PyModule*)luaL_checkudata(L, 1, "Python.Module");
 	luaL_argcheck(L, py_module != NULL, 1, "'Python.Module' expected");
 
+	if (!py_module->loaded)
+	{
+		return luaL_error(L, "Error: Specified Python.Module has been unloaded. \nAttempt to index unloaded Python.Module");
+	}
+
 	// getting python object of the given name
 	const char* name = luaL_checkstring(L, 2);
 	PyObject* pItem = PyObject_GetAttrString(py_module->module, name);
@@ -131,7 +149,7 @@ int PyLua_PyGet(lua_State* L)
 		}
 
 		Py_DECREF(pItem);
-		return luaL_error(L, "Error: Problem Occured while converting python object to lua variable.");
+		return luaL_error(L, "Error: Problem Occured while converting python object to lua variable");
 	}
 
 	return luaL_error(L, "Error: Some Error Occurred when getting Python Object");

@@ -11,9 +11,6 @@
 int PyLua_PythonToLua(lua_State* L, PyObject* pItem);
 PyObject* PyLua_LuaToPython(lua_State* L, int index);
 
-// callable.c
-PyObject* exec_LuaFunc(void* data, PyObject* args, PyObject* kwargs);
-
 
 typedef struct PyLua_LuaFunc {
 	PyObject_HEAD
