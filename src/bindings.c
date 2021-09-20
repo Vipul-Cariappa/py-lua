@@ -8,9 +8,13 @@
 #include <wchar.h>
 
 // convert.c
-int PyLua_PythonToLua(lua_State* L, PyObject* pItem, PyObject* pModule);
+int PyLua_PythonToLua(lua_State* L, PyObject* pItem);
+
+// callable.c
+PyMODINIT_FUNC PyInit_pylua(void);
 
 int PyLua_PyLoadedModuleCount = 0;
+extern PyObject* PyLua_pylua_module;
 
 
 typedef struct PyLua_PyModule {
@@ -23,8 +27,12 @@ int PyLua_PyLoadModule(lua_State* L)
 {
 	if (!Py_IsInitialized())
 	{
+		if (PyImport_AppendInittab("pylua", PyInit_pylua) == -1) {
+			return luaL_error(L, "Error: could not extend in-built modules table");
+		}
+
 		Py_Initialize();
-		
+
 		wchar_t* path = Py_GetPath();
 
 		#if defined(_WIN32)
@@ -50,6 +58,12 @@ int PyLua_PyLoadModule(lua_State* L)
 		wcsncat(new_path, path, wcslen(path));
 
 		PySys_SetPath(new_path);
+
+		PyLua_pylua_module = PyImport_ImportModule("pylua");
+		if (!PyLua_pylua_module) {
+			return luaL_error(L, "Error: could not import module 'pylua'");
+		}
+
 	}
 
 	const char* module_name = luaL_checkstring(L, 1);
@@ -110,7 +124,7 @@ int PyLua_PyGet(lua_State* L)
 	// converting to lua object
 	if (pItem)
 	{
-		int x = PyLua_PythonToLua(L, pItem, py_module->module);
+		int x = PyLua_PythonToLua(L, pItem);
 		if (x != -1)
 		{
 			return x;

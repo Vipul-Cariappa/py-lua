@@ -5,13 +5,15 @@
 #include <lauxlib.h>
 #include <lualib.h>
 
+#include <stdint.h>
+
+
 // convert.c
 PyObject* PyLua_LuaToPython(lua_State* L, int index);
-int PyLua_PythonToLua(lua_State* L, PyObject* pItem, PyObject* pModule);
+int PyLua_PythonToLua(lua_State* L, PyObject* pItem);
 
 
 typedef struct PyLua_PyCallable {
-	PyObject* module;
 	PyObject* function;
 } PyLua_PyCallable;
 
@@ -36,35 +38,30 @@ int PyLua_PyCallFunc(lua_State* L)
 		Py_DECREF(pArgs);
 		if (pResult)
 		{
-			PyLua_PythonToLua(L, pResult, luapy_callable->module);
+			PyLua_PythonToLua(L, pResult);
 			Py_DECREF(pResult);
 
-			Py_DECREF(luapy_callable->module);
 			Py_DECREF(luapy_callable->function);
 			return 1;
 		}
 
-		Py_DECREF(luapy_callable->module);
 		Py_DECREF(luapy_callable->function);
-		return luaL_error(L, "Error: Some Internal Problem");
+		return luaL_error(L, "Error: Some Internal Problem\n");
 	}
 
-	Py_DECREF(luapy_callable->module);
 	Py_DECREF(luapy_callable->function);
-	return luaL_error(L, "Error: Some Internal Problem");
+	return luaL_error(L, "Error: Some Internal Problem\n");
 }
 
 
-void get_PyFunc(lua_State* L, PyObject* pFunc, PyObject* pModule)
+void get_PyFunc(lua_State* L, PyObject* pFunc)
 {
 	// creating new lua python callable
 	size_t nbytes = sizeof(PyLua_PyCallable);
 	PyLua_PyCallable* py_callable = (PyLua_PyCallable*)lua_newuserdata(L, nbytes);
 	py_callable->function = pFunc;
-	py_callable->module = pModule;
 
 	Py_INCREF(pFunc);
-	Py_INCREF(pModule);
 
 	lua_pushcclosure(L, PyLua_PyCallFunc, 1);
 }

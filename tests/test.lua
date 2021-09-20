@@ -67,8 +67,34 @@ function test_python_tuple_conversion()
 end
 
 function test_python_set_conversion()
-    local py_set = py_module.pySet    
-    lu.assertEquals({12, "Set"}, py_set)
+    local py_set = py_module.pySet
+    lu.assertItemsEquals({"Set", 12}, py_set)
+end
+
+function nothing()
+    print("From Lua Function")
+    return nil
+end
+
+function test_lua_function_convert()
+    py_module.callme(nothing)
+end
+
+function lua_print(x)
+    print("From Lua File 'test.lua'")
+    print("From Lua Function 'lua_print'")
+    print("If you can see this that means lua is passing this function to python and python is calling this function")
+    print(x)
+    return 3.14
+end
+
+function test_get_called()
+    local o = 4;
+    function nested()
+        print(o+3);
+    end
+    py_module.get_called(nested)
+    py_module.get_called(lua_print)
 end
 
 -- os.exit(lu.LuaUnit.run())

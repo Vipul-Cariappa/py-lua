@@ -28,6 +28,15 @@ pySet = {
 
 
 def callme(*args):
-    # print(args)
-    # print("From CallMe", flush=True)
+    # print("From CallMe", flush=True, end=" ")
+    # print(args, flush=True)
     return None
+
+
+def get_called(func):
+    # if func == None:
+    #     print("got none")
+    # else:
+    #     func()
+    print("got: ", func)
+    print(func(55))
