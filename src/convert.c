@@ -1,13 +1,9 @@
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
+#include "pylua.h"
 
-#include <lua.h>
-#include <lauxlib.h>
-#include <lualib.h>
 
-// callable.c
-void get_PyFunc(lua_State* L, PyObject* pFunc);
-PyObject* PyLua_pylua_module;
+// lua_py.c
+PyObject* pPylua_Module;
+int call_PyFunc(lua_State* L);
 
 
 int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
@@ -58,8 +54,14 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
 	}
 	else if (PyCallable_Check(pItem))
 	{
-		// to function
-		get_PyFunc(L, pItem);
+		// creating new lua python callable
+		size_t nbytes = sizeof(PyLua_PyCallable);
+		PyLua_PyCallable* py_callable = (PyLua_PyCallable*)lua_newuserdata(L, nbytes);
+
+		py_callable->function = pItem;
+
+		lua_pushcclosure(L, call_PyFunc, 1);
+
 		return 1;
 	}
 	else if (PyDict_Check(pItem))
@@ -104,7 +106,7 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
 			pListElement = PyList_GetItem(pItem, i);
 			PyLua_PythonToLua(L, pListElement);
 
-			lua_seti(L, -2, i + 1);
+			lua_seti(L, -2, (lua_Integer)i + 1);
 		}
 
 		return 1;
@@ -122,7 +124,7 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
 			pTupleElement = PyTuple_GetItem(pItem, i);
 			PyLua_PythonToLua(L, pTupleElement);
 
-			lua_seti(L, -2, i + 1);
+			lua_seti(L, -2, (lua_Integer)i + 1);
 		}
 
 		return 1;
@@ -158,8 +160,9 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
 PyObject* PyLua_LuaToPython(lua_State* L, int index)
 {
 	PyObject* pItem;
+	int type = lua_type(L, index);
 
-	if (lua_type(L, index) == LUA_TNUMBER)
+	if (type == LUA_TNUMBER)
 	{
 		// to float
 		double x = lua_tonumber(L, index);
@@ -167,11 +170,11 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 
 		return pItem;
 	}
-	else if (lua_type(L, index) == LUA_TNIL)
+	else if (type == LUA_TNIL)
 	{
-		return Py_None;
+		Py_RETURN_NONE;
 	}
-	else if (lua_type(L, index) == LUA_TBOOLEAN)
+	else if (type == LUA_TBOOLEAN)
 	{
 		int x = lua_toboolean(L, index);
 		if (x)
@@ -180,13 +183,13 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 		}
 		Py_RETURN_FALSE;
 	}
-	else if (lua_type(L, index) == LUA_TSTRING)
+	else if (type == LUA_TSTRING)
 	{
 		const char* x = lua_tostring(L, index);
 		pItem = PyUnicode_FromString(x);
 		return pItem;
 	}
-	else if (lua_type(L, index) == LUA_TTABLE)
+	else if (type == LUA_TTABLE)
 	{
 		// Push another reference to the table on top of the stack (so we know
 		// where it is, and this function can work for negative, positive and
@@ -231,21 +234,35 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 			// Stack is now the same as it was on entry to this function
 
 			return pItem;
-
 		}
+
+		return luaL_error(L, "Error: Memory Error");
 	}
-	else if (lua_type(L, index) == LUA_TFUNCTION)
+	else if (type == LUA_TFUNCTION)
 	{
 		uintptr_t lStack_prt = L;
 		uintptr_t lFunc_prt = lua_topointer(L, index);
 
-		PyObject* func = PyObject_GetAttrString(PyLua_pylua_module, "lua_function_wrapper");
+		PyObject* func = PyObject_GetAttrString(pPylua_Module, "lua_function_wrapper");
 
-		PyObject* pArgs = Py_BuildValue("(KK)", lStack_prt, lFunc_prt);
+		if (func)
+		{
+			PyObject* pArgs = Py_BuildValue("(KK)", lStack_prt, lFunc_prt);
 
-		return PyObject_CallObject(func, pArgs);
-
+			PyObject* pReturn = PyObject_CallObject(func, pArgs);
+			if (pReturn)
+			{
+				return pReturn;
+			}
+		}
+		if (PyErr_Occurred())
+		{
+			PyErr_Print();
+		}
+		return luaL_error(L, "Error: While executing python function");
 	}
-
-	return NULL;
+	else
+	{
+		return NULL;
+	}
 }
