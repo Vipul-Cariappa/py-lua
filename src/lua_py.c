@@ -1,10 +1,12 @@
 #include "pylua.h"
 
+#include <wchar.h>
+
 // py_lua.c
 PyMODINIT_FUNC PyInit_pylua(void);
 
 int PyLua_PyLoadedModuleCount = 0;
-extern PyObject* PyLua_pylua_module;
+extern PyObject* pPylua_Module;
 
 
 typedef struct PyLua_PyModule {
@@ -50,8 +52,12 @@ int PyLua_PyLoadModule(lua_State* L)
 
 		PySys_SetPath(new_path);
 
-		PyLua_pylua_module = PyImport_ImportModule("pylua");
-		if (!PyLua_pylua_module) {
+		pPylua_Module = PyImport_ImportModule("pylua");
+		if (!pPylua_Module) {
+			if (PyErr_Occurred())
+			{
+				PyErr_Print();
+			}
 			return luaL_error(L, "Error: could not import module 'pylua'");
 		}
 
@@ -78,6 +84,10 @@ int PyLua_PyLoadModule(lua_State* L)
 		return 1;
 	}
 
+	if (PyErr_Occurred())
+	{
+		PyErr_Print();
+	}
 	return luaL_error(L, "Error: Could Not Import the Python Module");
 }
 
@@ -139,10 +149,14 @@ int PyLua_PyGet(lua_State* L)
 		}
 
 		Py_DECREF(pItem);
-		return luaL_error(L, "Error: Problem Occured while converting python object to lua variable");
+		return luaL_error(L, "Error: Occured while converting python object to lua variable");
 	}
 
-	return luaL_error(L, "Error: Some Error Occurred when getting Python Object");
+	if (PyErr_Occurred())
+	{
+		PyErr_Print();
+	}
+	return luaL_error(L, "Error: Occurred when getting Python Object");
 }
 
 

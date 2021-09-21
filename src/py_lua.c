@@ -3,15 +3,21 @@
 
 typedef struct PyLua_LuaFunc {
 	PyObject_HEAD
-		void* lStack_prt;
+	void* lStack_prt;
 	void* lFunc_prt;
 } PyLua_LuaFunc;
 
 
 static PyObject* LuaError;
 
+
 PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwargs)
 {
+	if (kwargs)
+	{
+		// raise error
+	}
+
 	lua_State* L = (lua_State*)self->lStack_prt;
 
 	// make sure size of stact is the same at exit
@@ -24,7 +30,7 @@ PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwargs)
 
 	// error message if function is not found
 	int found_func = 0;
-	PyObject* return_value = NULL;
+	PyObject* pReturn = NULL;
 
 	// get list of variables from lua
 	lua_getglobal(L, "_G");
@@ -52,11 +58,11 @@ PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwargs)
 			}
 
 			// call the function
-			if (lua_pcall(L, arg_len, LUA_MULTRET, 0) == LUA_ERRRUN)
+			if (lua_pcall(L, arg_len, LUA_MULTRET, 0) != LUA_OK)
 			{
-				// PyExc_Exception 
-				PyErr_SetString(LuaError, lua_tostring(L, -1));
 				//return luaL_error(L, "Error: While calling the lua function.");
+
+				PyErr_SetString(LuaError, lua_tostring(L, -1));
 				return NULL;
 			}
 
@@ -65,20 +71,20 @@ PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwargs)
 			if (return_len == 0)
 			{
 				Py_INCREF(Py_None);
-				return_value = Py_None;
+				pReturn = Py_None;
 			}
 			else if (return_len == 1)
 			{
-				return_value = PyLua_LuaToPython(L, -1);
+				pReturn = PyLua_LuaToPython(L, -1);
 				lua_pop(L, 1);
 			}
 			else
 			{
 				// to be implemented
 				Py_INCREF(Py_False);
-				return_value = Py_False;
+				pReturn = Py_False;
 
-				lua_pop(L, lua_gettop(L) - 3);
+				lua_pop(L, return_len);
 			}
 
 		}
@@ -86,32 +92,45 @@ PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwargs)
 		lua_pop(L, 1);
 	}
 
-	lua_pop(L, 1);
+	lua_pop(L, 1); // remove _G
 
 	if (!found_func)
 	{
-		return luaL_error(L, "Error: Lua function not found");
+		//return luaL_error(L, "Error: Lua function not found");
+
+		PyErr_SetString(LuaError, "Lua function not found");
+		return NULL;
 	}
 
 
 	// check stack size
 	if (lua_gettop(L) != stack_size)
 	{
-		return luaL_error(L, "Error: Stack size not same");
+		return luaL_error(L, "Error: Stack size not same.\n\tPlease Report this Issue");
+		exit(-1);
 	}
 
-	return return_value;
+	return pReturn;
 
 }
 
 PyObject* get_LuaFunc_Wrapper(PyLua_LuaFunc* self, PyObject* args, PyObject* kwargs)
 {
+	if (kwargs)
+	{
+		// raise error
+	}
+
 	uintptr_t a;
 	uintptr_t b;
 
 	if (!PyArg_ParseTuple(args, "KK", &a, &b))
 	{
 		return NULL;
+	}
+	else
+	{
+		// raise error
 	}
 
 	self->lStack_prt = (void*)a;
@@ -121,7 +140,7 @@ PyObject* get_LuaFunc_Wrapper(PyLua_LuaFunc* self, PyObject* args, PyObject* kwa
 }
 
 
-static PyTypeObject MyObject_Type = {
+static PyTypeObject pLuaFunc_Type = {
 	PyVarObject_HEAD_INIT(NULL, 0)
 	.tp_name = "pylua.lua_function_wrapper",
 	.tp_doc = "pylua.lua_function_wrapper",
@@ -145,7 +164,7 @@ PyMODINIT_FUNC PyInit_pylua(void)
 {
 	PyObject* m;
 
-	if (PyType_Ready(&MyObject_Type) < 0)
+	if (PyType_Ready(&pLuaFunc_Type) < 0)
 	{
 		return NULL;
 	}
@@ -157,9 +176,9 @@ PyMODINIT_FUNC PyInit_pylua(void)
 	}
 
 
-	Py_INCREF(&MyObject_Type);
-	if (PyModule_AddObject(m, "lua_function_wrapper", (PyObject*)&MyObject_Type) < 0) {
-		Py_DECREF(&MyObject_Type);
+	Py_INCREF(&pLuaFunc_Type);
+	if (PyModule_AddObject(m, "lua_function_wrapper", (PyObject*)&pLuaFunc_Type) < 0) {
+		Py_DECREF(&pLuaFunc_Type);
 		Py_DECREF(m);
 		return NULL;
 	}

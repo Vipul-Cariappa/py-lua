@@ -2,7 +2,7 @@
 
 
 // lua_py.c
-PyObject* PyLua_pylua_module;
+PyObject* pPylua_Module;
 
 typedef struct PyLua_PyCallable {
 	PyObject* function;
@@ -285,7 +285,7 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 		uintptr_t lStack_prt = L;
 		uintptr_t lFunc_prt = lua_topointer(L, index);
 
-		PyObject* func = PyObject_GetAttrString(PyLua_pylua_module, "lua_function_wrapper");
+		PyObject* func = PyObject_GetAttrString(pPylua_Module, "lua_function_wrapper");
 
 		PyObject* pArgs = Py_BuildValue("(KK)", lStack_prt, lFunc_prt);
 
