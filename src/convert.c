@@ -1,15 +1,8 @@
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
+#include "pylua.h"
 
-#include <lua.h>
-#include <lauxlib.h>
-#include <lualib.h>
 
-// bindings.c
+// lua_py.c
 PyObject* PyLua_pylua_module;
-int PyLua_PyCallFunc(lua_State* L);
-PyObject* PyLua_LuaToPython(lua_State* L, int index);
-int PyLua_PythonToLua(lua_State* L, PyObject* pItem);
 
 typedef struct PyLua_PyCallable {
 	PyObject* function;

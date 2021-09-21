@@ -1,15 +1,4 @@
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
-
-#include <lua.h>
-#include <lauxlib.h>
-#include <lualib.h>
-
-#include <stdint.h>
-
-// convert.c
-int PyLua_PythonToLua(lua_State* L, PyObject* pItem);
-PyObject* PyLua_LuaToPython(lua_State* L, int index);
+#include "pylua.h"
 
 
 typedef struct PyLua_LuaFunc {
@@ -66,7 +55,7 @@ PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwargs)
 			if (lua_pcall(L, arg_len, LUA_MULTRET, 0) == LUA_ERRRUN)
 			{
 				// PyExc_Exception 
-				PyErr_SetString(PyExc_Exception, lua_tostring(L, -1));
+				PyErr_SetString(LuaError, lua_tostring(L, -1));
 				//return luaL_error(L, "Error: While calling the lua function.");
 				return NULL;
 			}
