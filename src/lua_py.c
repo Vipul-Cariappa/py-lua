@@ -119,6 +119,50 @@ int PyLua_PyUnloadModule(lua_State* L)
 }
 
 
+int call_PyFunc(lua_State* L)
+{
+	int args_count = lua_gettop(L);
+	PyLua_PyCallable* py_callable = (PyLua_PyCallable*)lua_touserdata(L, lua_upvalueindex(1));
+
+	if (!py_callable->function)
+	{
+		// raise error
+		luaL_error(L, "Error: Python function out of bound");
+	}
+
+	PyObject* pArgs = PyTuple_New(args_count);
+	PyObject* pItem;
+
+	if (pArgs)
+	{
+		for (int i = 0, j = 1; i < args_count; i++, j++)
+		{
+			pItem = PyLua_LuaToPython(L, j);
+			PyTuple_SetItem(pArgs, i, pItem);
+		}
+
+		PyObject* pResult = PyObject_CallObject(py_callable->function, pArgs);
+		Py_DECREF(pArgs);
+		if (pResult)
+		{
+			PyLua_PythonToLua(L, pResult);
+			Py_DECREF(pResult);
+
+			return 1;
+		}
+		else
+		{
+			PyErr_Print();
+			return luaL_error(L, "Error: While executing function\n");
+		}
+
+	}
+
+	return luaL_error(L, "Error: Memory Error\n");
+}
+
+
+
 int PyLua_PySet(lua_State* L)
 {
 	return luaL_error(L, "Error: Cannot Assign Values to Python.Module Objects");
