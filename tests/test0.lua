@@ -103,5 +103,7 @@ function test_get_called()
     py_module.get_called(error_out)
 end
 
+function test_errors()
+    assertError()
 -- os.exit(lu.LuaUnit.run())
 lu.LuaUnit.run()
