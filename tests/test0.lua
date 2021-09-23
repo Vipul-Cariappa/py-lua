@@ -1,7 +1,6 @@
 lu = require('luaunit')
 require("pylua")
 
-
 py_module = Python.PyLoad("test")
 
 

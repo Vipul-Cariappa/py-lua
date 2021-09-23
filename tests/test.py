@@ -45,3 +45,13 @@ def get_called(func):
         print("Lua function errored out")
 
     # func(1)
+
+def handle_iter(co):
+    it = iter(co)
+    print(f"{it = }")
+    a = next(co)
+    print(f"{a = }")
+
+def handle_iter_all(co):
+    for i in co:
+        print(i)

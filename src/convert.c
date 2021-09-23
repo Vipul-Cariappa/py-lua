@@ -247,7 +247,30 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 
 		if (func)
 		{
-			PyObject* pArgs = Py_BuildValue("(KK)", lStack_prt, lFunc_prt);
+			PyObject* pArgs = Py_BuildValue("(KKi)", lStack_prt, lFunc_prt, 0);
+
+			PyObject* pReturn = PyObject_CallObject(func, pArgs);
+			if (pReturn)
+			{
+				return pReturn;
+			}
+		}
+		if (PyErr_Occurred())
+		{
+			PyErr_Print();
+		}
+		return luaL_error(L, "Error: While executing python function");
+	}
+	else if (type == LUA_TTHREAD)
+	{
+		uintptr_t lStack_prt = L;
+		uintptr_t lFunc_prt = lua_topointer(L, index);
+
+		PyObject* func = PyObject_GetAttrString(pPylua_Module, "lua_function_wrapper");
+
+		if (func)
+		{
+			PyObject* pArgs = Py_BuildValue("(KKi)", lStack_prt, lFunc_prt, 1);
 
 			PyObject* pReturn = PyObject_CallObject(func, pArgs);
 			if (pReturn)

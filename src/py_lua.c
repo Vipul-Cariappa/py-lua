@@ -5,14 +5,160 @@ typedef struct PyLua_LuaFunc {
 	PyObject_HEAD
 	void* lStack_prt;
 	void* lFunc_prt;
+	int is_luathread;
+	int thread_terminated;
 } PyLua_LuaFunc;
 
 
 static PyObject* LuaError;
 
+PyObject* next_LuaCoroutine(PyLua_LuaFunc* self)
+{
+	PyObject* pReturn = NULL;
+
+	if (self->thread_terminated)
+	{
+		PyErr_SetString(PyExc_StopIteration, "");
+		return NULL;
+	}
+
+	lua_State* L = (lua_State*)self->lStack_prt;
+
+	// make sure size of stact is the same at exit
+	int stack_size = lua_gettop(L);
+
+	// error message if function is not found
+	int found_func = 0;
+
+	// get list of variables from lua
+	lua_getglobal(L, "_G");
+
+	lua_pushnil(L);
+
+	// iterate over them to find the function
+	while (lua_next(L, -2))
+	{
+		if (lua_topointer(L, -1) == self->lFunc_prt)
+		{
+			// found the function
+			found_func = 1;
+
+			// to find number of return values
+			int current_stack = lua_gettop(L);
+
+			// copy function
+			lua_pushvalue(L, -1);
+
+			// number of yield values
+			int yield_count = 0;
+
+			// to be remove only for debugging
+			//lua_status(L);
+			// -------------------------------
+
+			lua_State* co = lua_tothread(L, -1);
+
+			// call the function
+			int resume_result = lua_resume(co, L, 0, &yield_count);
+
+			if (resume_result == LUA_YIELD)
+			{
+				if (yield_count == 0)
+				{
+					Py_INCREF(Py_None);
+					pReturn = Py_None;
+				}
+				else if (yield_count == 1)
+				{
+					pReturn = PyLua_LuaToPython(co, -1);
+					lua_pop(co, 1);
+				}
+				else
+				{
+					// to be implemented
+					Py_INCREF(Py_False);
+					pReturn = Py_False;
+
+					lua_pop(co, yield_count);
+				}
+				
+			}
+			else if (resume_result == LUA_OK)
+			{
+				self->thread_terminated = 1;
+
+				if (yield_count == 0)
+				{
+					Py_INCREF(Py_None);
+					pReturn = Py_None;
+				}
+				else if (yield_count == 1)
+				{
+					pReturn = PyLua_LuaToPython(co, -1);
+					lua_pop(co, 1);
+				}
+				else
+				{
+					// to be implemented
+					Py_INCREF(Py_False);
+					pReturn = Py_False;
+
+					lua_pop(co, yield_count);
+				}
+			}
+			else
+			{
+				//return luaL_error(L, "Error: While calling the lua function.");
+
+				PyErr_SetString(LuaError, lua_tostring(L, -1));
+				return NULL;
+			}
+			lua_pop(L, 1);
+		}
+		lua_pop(L, 1);
+	}
+
+	lua_pop(L, 1); // remove _G
+
+	if (!found_func)
+	{
+		//return luaL_error(L, "Error: Lua function not found");
+		PyErr_SetString(LuaError, "Lua function not found");
+		return NULL;
+	}
+
+	// check stack size
+	if (lua_gettop(L) != stack_size)
+	{
+		return luaL_error(L, "Error: Stack size not same.\n\tPlease Report this Issue");
+		exit(-1);
+	}
+
+	return pReturn;
+}
+
+PyObject* iter_LuaCoroutine(PyLua_LuaFunc* self)
+{	
+	if (!self->is_luathread)
+	{
+		PyErr_SetString(LuaError, "Not a lua thread");
+		return NULL;
+	}
+
+	Py_INCREF(self);
+	return self;
+}
+
 
 PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwargs)
 {
+	if (self->is_luathread)
+	{
+		// raise error
+		PyErr_SetString(LuaError, "LuaError: Can not call lua thread type");
+		return NULL;
+	}
+
 	if (kwargs)
 	{
 		// raise error
@@ -123,8 +269,9 @@ PyObject* get_LuaFunc_Wrapper(PyLua_LuaFunc* self, PyObject* args, PyObject* kwa
 
 	uintptr_t a;
 	uintptr_t b;
+	int is_luathread;
 
-	if (!PyArg_ParseTuple(args, "KK", &a, &b))
+	if (!PyArg_ParseTuple(args, "KKi", &a, &b, &is_luathread))
 	{
 		return NULL;
 	}
@@ -135,6 +282,8 @@ PyObject* get_LuaFunc_Wrapper(PyLua_LuaFunc* self, PyObject* args, PyObject* kwa
 
 	self->lStack_prt = (void*)a;
 	self->lFunc_prt = (void*)b;
+	self->is_luathread = is_luathread;
+	self->thread_terminated = 0;
 
 	return 0;
 }
@@ -150,6 +299,8 @@ static PyTypeObject pLuaFunc_Type = {
 	.tp_new = PyType_GenericNew,
 	.tp_init = get_LuaFunc_Wrapper,
 	.tp_call = call_LuaFunc,
+	.tp_iter = iter_LuaCoroutine,
+	.tp_iternext = next_LuaCoroutine
 };
 
 
