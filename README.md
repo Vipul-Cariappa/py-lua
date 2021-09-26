@@ -1,12 +1,13 @@
 # py-lua
 Bridge between Python and Lua.
-This project has been started to provide easy binding between python and lua programming languages. Currently tested with lua version 5.3 and 5.4 and python version 3.8.
+This project has been started to provide easy binding between python and lua programming languages. Currently tested with lua version 5.4 and python version 3.8.
 
 ### Currently py-lua supports:
 - Importing python module into lua program.
 - Getting string, float, boolean and None data types from python.
 - Convertion between python dict and lua table.
 - Calling and extracting return values of functions with simple data types.
+- Working with python generators and lua threads.
 
 ## Example
 ```python
@@ -38,17 +39,17 @@ print(pymodule.concatenate("Lua loves ", "Python"))
 -- Lua loves Python
 ```
 
-## Building
+<!-- ## Building
 To compile py-lua in linux. First install the required dependencies:
 - python3-dev
-- lua5.3
-- liblua5.3-dev
+- lua5.4
+- liblua5.4-dev
 - gcc
 
 In ubuntu run
 
 ```bash
-sudo apt-get install python3-dev lua5.3 liblua5.3-dev gcc -y
+sudo apt-get install python3-dev lua5.4 liblua5.4-dev gcc -y
 ```
 
 Clone the repository
@@ -62,20 +63,20 @@ Build using gcc
 ```bash 
 cd py-lua/src
 
-gcc -fPIC -shared -o pylua.so bindings.c callable.c convert.c lua_py.c $(pkg-config --cflags --libs lua5.3) $(pkg-config --cflags --libs python3)
+gcc -fPIC -shared -o pylua.so convert.c lua_py.c py_lua.c -Iheader $(pkg-config --cflags --libs lua5.4) $(pkg-config --cflags --libs python3)
 ```
 
 Copy the shared library pylua.so file to the working directory of your project.
 
-If you face any problems while building please ask for help [here](https://github.com/Vipul-Cariappa/py-lua/discussions/new).
+If you face any problems while building please ask for help [here](https://github.com/Vipul-Cariappa/py-lua/discussions/new). -->
 
 
 ## Yet to Implement
 - [x] Simple data type convertions
 - [x] Calling python functions from lua
-- [ ] Support list, tuple, dict and set
+- [x] Support list, tuple, dict and set
+- [x] Support for generator functions
 - [ ] Support for working with python classes from lua
-- [ ] Support for generator functions
 - [ ] Calling lua from python (lua bindings for python)
 
 ## Contribution
