@@ -4,6 +4,7 @@
 // lua_py.c
 PyObject* pPylua_Module;
 int call_PyFunc(lua_State* L);
+int init_iter(lua_State* L, ...);
 
 
 int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
@@ -150,6 +151,31 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
 		}
 
 		Py_DECREF(pSetIter);
+
+		return 1;
+	}
+	else if (PyIter_Check(pItem))
+	{
+		lua_State* n = lua_newthread(L);
+
+		// creating new lua python iterator
+		size_t nbytes = sizeof(PyLua_PyIterator);
+		PyLua_PyIterator* py_iter = (PyLua_PyIterator*)lua_newuserdata(n, nbytes);
+
+		PyObject* iter = PyObject_GetIter(pItem);
+		if (!iter)
+		{
+			// raise error
+			// memory error?
+			return -1;
+		}
+
+		py_iter->iterator = iter;
+
+		lua_pushcclosure(n, init_iter, 1);
+		lua_pushvalue(n, -1);
+
+		lua_setglobal(n, "python_iterator_wrapper");
 
 		return 1;
 	}

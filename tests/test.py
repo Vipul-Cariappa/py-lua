@@ -38,20 +38,30 @@ def get_called(func):
     #     print("got none")
     # else:
     #     func()
-    print("got: ", func)
+    # print("got: ", func)
     try:
-        print(func(55))
+        # print(func(55))
+        func(55)
     except Exception as a:
-        print("Lua function errored out")
+        # print("Lua function errored out")
+        pass
 
     # func(1)
 
 def handle_iter(co):
     it = iter(co)
-    print(f"{it = }")
+    # print(f"{it = }")
     a = next(co)
-    print(f"{a = }")
+    # print(f"{a = }")
 
 def handle_iter_all(co):
     for i in co:
-        print(i)
+        # print(i)
+        i
+
+
+def c_range(x):
+    a = 0
+    while a < x:
+        yield a
+        a += 1

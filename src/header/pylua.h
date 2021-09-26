@@ -15,6 +15,8 @@
 		PyObject* function;
 	} PyLua_PyCallable;
 
-
+	typedef struct PyLua_PyIterator {
+		PyObject* iterator;
+	} PyLua_PyIterator;
 
 #endif // !pylua

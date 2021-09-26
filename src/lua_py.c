@@ -204,6 +204,23 @@ int PyLua_PyGet(lua_State* L)
 }
 
 
+int init_iter(lua_State* L, ...)
+{
+	PyLua_PyIterator* py_iter = (PyLua_PyIterator*)lua_touserdata(L, lua_upvalueindex(1));
+
+	PyObject* pItem = PyIter_Next(py_iter->iterator);
+	if (pItem)
+	{
+		PyLua_PythonToLua(L, pItem);
+		Py_DECREF(pItem);
+		return lua_yieldk(L, 1, NULL, init_iter);
+	}
+
+	PyErr_Print();
+	return luaL_error(L, "Error: Iteration\n");
+}
+
+
 static const struct luaL_Reg PY_lib[] = {
 	{"PyLoad", PyLua_PyLoadModule},
 	{"PyUnLoad", PyLua_PyUnloadModule},

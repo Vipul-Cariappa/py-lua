@@ -19,5 +19,24 @@ function test_coroutine2()
     py_module.handle_iter_all(c2)
 end
 
+function test_py_coroutine1()
+    range1 = py_module.c_range(6)
+    range2 = py_module.c_range(2)
+    
+    print(coroutine.resume(range1))
+    print(coroutine.resume(range1))
+    print(coroutine.resume(range1))
+    print(coroutine.resume(range1))
+    print(coroutine.resume(range1))
+    print(coroutine.resume(range1))
+    print(coroutine.resume(range1))
+    print(coroutine.resume(range1))
+    print(coroutine.resume(range2))
+    print(coroutine.resume(range2))
+    print(coroutine.resume(range2))
+    print(coroutine.resume(range2))
+    -- print(x)
+end
+
 -- os.exit(lu.LuaUnit.run())
 lu.LuaUnit.run()
