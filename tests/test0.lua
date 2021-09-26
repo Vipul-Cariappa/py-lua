@@ -1,7 +1,6 @@
 lu = require('luaunit')
 require("pylua")
 
-
 py_module = Python.PyLoad("test")
 
 
@@ -81,10 +80,10 @@ function test_lua_function_convert()
 end
 
 function lua_print(x)
-    print("From Lua File 'test.lua'")
-    print("From Lua Function 'lua_print'")
-    print("If you can see this that means lua is passing this function to python and python is calling this function")
-    print(x)
+    -- print("From Lua File 'test.lua'")
+    -- print("From Lua Function 'lua_print'")
+    -- print("If you can see this that means lua is passing this function to python and python is calling this function")
+    -- print(x)
     return 3.14
 end
 

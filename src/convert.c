@@ -4,6 +4,7 @@
 // lua_py.c
 PyObject* pPylua_Module;
 int call_PyFunc(lua_State* L);
+int iter_PyGenerator(lua_State* L, ...);
 
 
 int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
@@ -153,6 +154,31 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
 
 		return 1;
 	}
+	else if (PyIter_Check(pItem))
+	{
+		lua_State* n = lua_newthread(L);
+
+		// creating new lua python iterator
+		size_t nbytes = sizeof(PyLua_PyIterator);
+		PyLua_PyIterator* py_iter = (PyLua_PyIterator*)lua_newuserdata(n, nbytes);
+
+		PyObject* iter = PyObject_GetIter(pItem);
+		if (!iter)
+		{
+			// raise error
+			// memory error?
+			return -1;
+		}
+
+		py_iter->iterator = iter;
+
+		lua_pushcclosure(n, iter_PyGenerator, 1);
+		lua_pushvalue(n, -1);
+
+		lua_setglobal(n, "python_iterator_wrapper");
+
+		return 1;
+	}
 
 	return -1;
 }
@@ -247,7 +273,30 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 
 		if (func)
 		{
-			PyObject* pArgs = Py_BuildValue("(KK)", lStack_prt, lFunc_prt);
+			PyObject* pArgs = Py_BuildValue("(KKi)", lStack_prt, lFunc_prt, 0);
+
+			PyObject* pReturn = PyObject_CallObject(func, pArgs);
+			if (pReturn)
+			{
+				return pReturn;
+			}
+		}
+		if (PyErr_Occurred())
+		{
+			PyErr_Print();
+		}
+		return luaL_error(L, "Error: While executing python function");
+	}
+	else if (type == LUA_TTHREAD)
+	{
+		uintptr_t lStack_prt = L;
+		uintptr_t lFunc_prt = lua_topointer(L, index);
+
+		PyObject* func = PyObject_GetAttrString(pPylua_Module, "lua_function_wrapper");
+
+		if (func)
+		{
+			PyObject* pArgs = Py_BuildValue("(KKi)", lStack_prt, lFunc_prt, 1);
 
 			PyObject* pReturn = PyObject_CallObject(func, pArgs);
 			if (pReturn)
