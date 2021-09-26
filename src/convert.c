@@ -4,7 +4,7 @@
 // lua_py.c
 PyObject* pPylua_Module;
 int call_PyFunc(lua_State* L);
-int init_iter(lua_State* L, ...);
+int iter_PyGenerator(lua_State* L, ...);
 
 
 int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
@@ -172,7 +172,7 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
 
 		py_iter->iterator = iter;
 
-		lua_pushcclosure(n, init_iter, 1);
+		lua_pushcclosure(n, iter_PyGenerator, 1);
 		lua_pushvalue(n, -1);
 
 		lua_setglobal(n, "python_iterator_wrapper");

@@ -20,23 +20,29 @@ function test_coroutine2()
 end
 
 function test_py_coroutine1()
-    range1 = py_module.c_range(6)
-    range2 = py_module.c_range(2)
+    local range = py_module.c_range(2)
     
-    print(coroutine.resume(range1))
-    print(coroutine.resume(range1))
-    print(coroutine.resume(range1))
-    print(coroutine.resume(range1))
-    print(coroutine.resume(range1))
-    print(coroutine.resume(range1))
-    print(coroutine.resume(range1))
-    print(coroutine.resume(range1))
-    print(coroutine.resume(range2))
-    print(coroutine.resume(range2))
-    print(coroutine.resume(range2))
-    print(coroutine.resume(range2))
-    -- print(x)
+    local _, x = coroutine.resume(range)
+    lu.assertEquals(x, 0)
+
+    local _, x = coroutine.resume(range)
+    lu.assertEquals(x, 1)
+    
+    local _, x = coroutine.resume(range)
+    lu.assertEquals(_, false)
+
+    local _, x = coroutine.resume(range)
+    lu.assertEquals(_, false)
 end
+
+
+function test_py_coroutine2()
+    local range = py_module.c_range(-1)
+    local _, x = coroutine.resume(range)
+    lu.assertEquals(_, false)
+    lu.assertEquals(x, "Error: Occurred when iterating Python Object")
+end
+
 
 -- os.exit(lu.LuaUnit.run())
 lu.LuaUnit.run()

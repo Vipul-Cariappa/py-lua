@@ -62,6 +62,8 @@ def handle_iter_all(co):
 
 def c_range(x):
     a = 0
+    if x < 1:
+        raise Exception("x should greater than 0")
     while a < x:
         yield a
         a += 1

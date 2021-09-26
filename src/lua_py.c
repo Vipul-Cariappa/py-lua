@@ -204,7 +204,7 @@ int PyLua_PyGet(lua_State* L)
 }
 
 
-int init_iter(lua_State* L, ...)
+int iter_PyGenerator(lua_State* L, ...)
 {
 	PyLua_PyIterator* py_iter = (PyLua_PyIterator*)lua_touserdata(L, lua_upvalueindex(1));
 
@@ -213,11 +213,18 @@ int init_iter(lua_State* L, ...)
 	{
 		PyLua_PythonToLua(L, pItem);
 		Py_DECREF(pItem);
-		return lua_yieldk(L, 1, NULL, init_iter);
+		return lua_yieldk(L, 1, NULL, iter_PyGenerator);
 	}
 
-	PyErr_Print();
-	return luaL_error(L, "Error: Iteration\n");
+	Py_DECREF(py_iter->iterator);
+
+	if (PyErr_Occurred())
+	{
+		PyErr_Print();
+		return luaL_error(L, "Error: Occurred when iterating Python Object");
+	}
+
+	return luaL_error(L, "Error: Stop Iteration");
 }
 
 
