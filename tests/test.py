@@ -67,3 +67,6 @@ def c_range(x):
     while a < x:
         yield a
         a += 1
+
+def raise_error(*args):
+    raise Exception("Test Error")

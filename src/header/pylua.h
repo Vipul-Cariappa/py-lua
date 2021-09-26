@@ -11,9 +11,9 @@
 	PyObject* PyLua_LuaToPython(lua_State* L, int index);
 	int PyLua_PythonToLua(lua_State* L, PyObject* pItem);
 
-	typedef struct PyLua_PyCallable {
+	typedef struct PyLua_PyFunc {
 		PyObject* function;
-	} PyLua_PyCallable;
+	} PyLua_PyFunc;
 
 	typedef struct PyLua_PyIterator {
 		PyObject* iterator;

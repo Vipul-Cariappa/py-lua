@@ -5,9 +5,9 @@
 // py_lua.c
 PyMODINIT_FUNC PyInit_pylua(void);
 
+
 int PyLua_PyLoadedModuleCount = 0;
 extern PyObject* pPylua_Module;
-
 
 typedef struct PyLua_PyModule {
 	PyObject* module;
@@ -16,7 +16,76 @@ typedef struct PyLua_PyModule {
 } PyLua_PyModule;
 
 
-int PyLua_PyLoadModule(lua_State* L)
+int call_PyFunc(lua_State* L)
+{
+	int args_count = lua_gettop(L);
+	PyLua_PyFunc* py_callable = (PyLua_PyFunc*)lua_touserdata(L, lua_upvalueindex(1));
+
+	if (!py_callable->function)
+	{
+		// raise error
+		luaL_error(L, "Error: Python function not found");
+	}
+
+	PyObject* pArgs = PyTuple_New(args_count);
+	PyObject* pItem;
+
+	if (pArgs)
+	{
+		for (int i = 0, j = 1; i < args_count; i++, j++)
+		{
+			pItem = PyLua_LuaToPython(L, j);
+			PyTuple_SetItem(pArgs, i, pItem);
+		}
+
+		PyObject* pResult = PyObject_CallObject(py_callable->function, pArgs);
+		Py_DECREF(pArgs);
+		if (pResult)
+		{
+			PyLua_PythonToLua(L, pResult);
+			Py_DECREF(pResult);
+
+			return 1;
+		}
+		else
+		{
+			PyErr_Print();
+			return luaL_error(L, "Error: While executing function\n");
+		}
+
+	}
+
+	return luaL_error(L, "Error: Memory Error\n");
+}
+
+
+int iter_PyGenerator(lua_State* L, ...)
+// write big comment explaing the reason behind ...
+{
+	PyLua_PyIterator* py_iter = (PyLua_PyIterator*)lua_touserdata(L, lua_upvalueindex(1));
+
+	PyObject* pItem = PyIter_Next(py_iter->iterator);
+	if (pItem)
+	{
+		PyLua_PythonToLua(L, pItem);
+		Py_DECREF(pItem);
+		return lua_yieldk(L, 1, 0, iter_PyGenerator);
+	}
+
+	Py_DECREF(py_iter->iterator);
+
+	if (PyErr_Occurred())
+	{
+		PyErr_Print();
+		return luaL_error(L, "Error: Occurred when iterating Python Object");
+	}
+
+	return luaL_error(L, "Error: Stop Iteration");
+}
+
+
+
+static int PyLua_PyLoadModule(lua_State* L)
 {
 	if (!Py_IsInitialized())
 	{
@@ -92,7 +161,7 @@ int PyLua_PyLoadModule(lua_State* L)
 }
 
 
-int PyLua_PyUnloadModule(lua_State* L)
+static int PyLua_PyUnloadModule(lua_State* L)
 {
 	PyLua_PyModule* py_module = (PyLua_PyModule*)luaL_checkudata(L, 1, "Python.Module");
 	luaL_argcheck(L, py_module != NULL, 1, "Error: 'Python.Module' expected");
@@ -119,57 +188,13 @@ int PyLua_PyUnloadModule(lua_State* L)
 }
 
 
-int call_PyFunc(lua_State* L)
-{
-	int args_count = lua_gettop(L);
-	PyLua_PyCallable* py_callable = (PyLua_PyCallable*)lua_touserdata(L, lua_upvalueindex(1));
-
-	if (!py_callable->function)
-	{
-		// raise error
-		luaL_error(L, "Error: Python function out of bound");
-	}
-
-	PyObject* pArgs = PyTuple_New(args_count);
-	PyObject* pItem;
-
-	if (pArgs)
-	{
-		for (int i = 0, j = 1; i < args_count; i++, j++)
-		{
-			pItem = PyLua_LuaToPython(L, j);
-			PyTuple_SetItem(pArgs, i, pItem);
-		}
-
-		PyObject* pResult = PyObject_CallObject(py_callable->function, pArgs);
-		Py_DECREF(pArgs);
-		if (pResult)
-		{
-			PyLua_PythonToLua(L, pResult);
-			Py_DECREF(pResult);
-
-			return 1;
-		}
-		else
-		{
-			PyErr_Print();
-			return luaL_error(L, "Error: While executing function\n");
-		}
-
-	}
-
-	return luaL_error(L, "Error: Memory Error\n");
-}
-
-
-
-int PyLua_PySet(lua_State* L)
+static int PyLua_PySet(lua_State* L)
 {
 	return luaL_error(L, "Error: Cannot Assign Values to Python.Module Objects");
 }
 
 
-int PyLua_PyGet(lua_State* L)
+static int PyLua_PyGet(lua_State* L)
 {
 	PyLua_PyModule* py_module = (PyLua_PyModule*)luaL_checkudata(L, 1, "Python.Module");
 	luaL_argcheck(L, py_module != NULL, 1, "'Python.Module' expected");
@@ -187,13 +212,7 @@ int PyLua_PyGet(lua_State* L)
 	if (pItem)
 	{
 		int x = PyLua_PythonToLua(L, pItem);
-		if (x != -1)
-		{
-			return x;
-		}
-
-		Py_DECREF(pItem);
-		return luaL_error(L, "Error: Occured while converting python object to lua variable");
+		return x;
 	}
 
 	if (PyErr_Occurred())
@@ -201,30 +220,6 @@ int PyLua_PyGet(lua_State* L)
 		PyErr_Print();
 	}
 	return luaL_error(L, "Error: Occurred when getting Python Object");
-}
-
-
-int iter_PyGenerator(lua_State* L, ...)
-{
-	PyLua_PyIterator* py_iter = (PyLua_PyIterator*)lua_touserdata(L, lua_upvalueindex(1));
-
-	PyObject* pItem = PyIter_Next(py_iter->iterator);
-	if (pItem)
-	{
-		PyLua_PythonToLua(L, pItem);
-		Py_DECREF(pItem);
-		return lua_yieldk(L, 1, NULL, iter_PyGenerator);
-	}
-
-	Py_DECREF(py_iter->iterator);
-
-	if (PyErr_Occurred())
-	{
-		PyErr_Print();
-		return luaL_error(L, "Error: Occurred when iterating Python Object");
-	}
-
-	return luaL_error(L, "Error: Stop Iteration");
 }
 
 

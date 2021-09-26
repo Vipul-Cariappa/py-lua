@@ -48,16 +48,16 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
 	}
 	else if (pItem == Py_None)
 	{
-		// to function
+		// to nil
 		lua_pushnil(L);
 
 		return 1;
 	}
-	else if (PyCallable_Check(pItem))
+	else if (PyFunction_Check(pItem))
 	{
-		// creating new lua python callable
-		size_t nbytes = sizeof(PyLua_PyCallable);
-		PyLua_PyCallable* py_callable = (PyLua_PyCallable*)lua_newuserdata(L, nbytes);
+		// creating new lua function
+		size_t nbytes = sizeof(PyLua_PyFunc);
+		PyLua_PyFunc* py_callable = (PyLua_PyFunc*)lua_newuserdata(L, nbytes);
 
 		py_callable->function = pItem;
 
@@ -156,31 +156,30 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
 	}
 	else if (PyIter_Check(pItem))
 	{
+		// creating new lua thread
+
 		lua_State* n = lua_newthread(L);
 
-		// creating new lua python iterator
 		size_t nbytes = sizeof(PyLua_PyIterator);
 		PyLua_PyIterator* py_iter = (PyLua_PyIterator*)lua_newuserdata(n, nbytes);
 
 		PyObject* iter = PyObject_GetIter(pItem);
+		
 		if (!iter)
 		{
-			// raise error
-			// memory error?
-			return -1;
+			PyErr_Print();
+			return luaL_error(L, "Error: Memory error");
 		}
 
 		py_iter->iterator = iter;
 
 		lua_pushcclosure(n, iter_PyGenerator, 1);
-		lua_pushvalue(n, -1);
-
-		lua_setglobal(n, "python_iterator_wrapper");
 
 		return 1;
 	}
 
-	return -1;
+	fprintf(stderr, "Error: While converting Python type to Lua type");
+	exit(-1);
 }
 
 PyObject* PyLua_LuaToPython(lua_State* L, int index)
@@ -198,10 +197,12 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 	}
 	else if (type == LUA_TNIL)
 	{
+		// to none
 		Py_RETURN_NONE;
 	}
 	else if (type == LUA_TBOOLEAN)
 	{
+		// to boolean
 		int x = lua_toboolean(L, index);
 		if (x)
 		{
@@ -211,12 +212,15 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 	}
 	else if (type == LUA_TSTRING)
 	{
+		// to string
 		const char* x = lua_tostring(L, index);
 		pItem = PyUnicode_FromString(x);
 		return pItem;
 	}
 	else if (type == LUA_TTABLE)
 	{
+		// to dictonary
+	
 		// Push another reference to the table on top of the stack (so we know
 		// where it is, and this function can work for negative, positive and
 		// pseudo indices
@@ -266,6 +270,7 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 	}
 	else if (type == LUA_TFUNCTION)
 	{
+		// to python function
 		uintptr_t lStack_prt = L;
 		uintptr_t lFunc_prt = lua_topointer(L, index);
 
@@ -289,6 +294,7 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 	}
 	else if (type == LUA_TTHREAD)
 	{
+		// to python generator
 		uintptr_t lStack_prt = L;
 		uintptr_t lFunc_prt = lua_topointer(L, index);
 
@@ -310,8 +316,7 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 		}
 		return luaL_error(L, "Error: While executing python function");
 	}
-	else
-	{
-		return NULL;
-	}
+	
+	fprintf(stderr, "Error: While converting Lua type to Python type");
+	exit(-1);
 }
