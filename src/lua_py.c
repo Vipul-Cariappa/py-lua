@@ -1,6 +1,12 @@
 #include "pylua.h"
+#include "frameobject.h"
 
 #include <wchar.h>
+#include <string.h>
+
+#define TRACEBACK_STR_LEN 256
+#define EXCEPTION_STR_LEN 256
+#define LUA_MEMORY_ERROR(L) return luaL_error((L), "Memory Error")
 
 // py_lua.c
 PyMODINIT_FUNC PyInit_pylua(void);
@@ -14,6 +20,131 @@ typedef struct PyLua_PyModule {
 	int number;
 	int loaded;
 } PyLua_PyModule;
+
+
+static int raise_error(lua_State* L, const char* msg)
+{
+	if (!PyErr_Occurred())
+	{
+		return luaL_error(L, msg);
+	}
+
+	size_t err_max = 1024;
+	
+	char* err_msg = malloc(err_max);
+	if (!err_msg)
+	{
+		LUA_MEMORY_ERROR(L);
+	}
+
+	if (sprintf_s(err_msg, err_max, "%s\n\nPython Traceback:\n", msg) < 0)
+	{
+		LUA_MEMORY_ERROR(L);
+	}
+
+	PyObject* pExcType;
+	PyObject* pExcValue;
+	PyObject* pExcTraceback;
+	PyErr_Fetch(&pExcType, &pExcValue, &pExcTraceback);
+	PyErr_NormalizeException(&pExcType, &pExcValue, &pExcTraceback);
+
+	if (PyTraceBack_Check(pExcTraceback))
+	{
+		PyTracebackObject* pTrace = (PyTracebackObject*)pExcTraceback;
+
+		char* traceback_msg = malloc(TRACEBACK_STR_LEN);
+		if (!traceback_msg)
+		{
+			LUA_MEMORY_ERROR(L);
+		}
+
+		while (pTrace != NULL)
+		{
+			PyFrameObject* frame = pTrace->tb_frame;
+			PyCodeObject* code = frame->f_code;
+
+			int lineNr = PyFrame_GetLineNumber(frame);
+			const char* codeName = PyUnicode_AsUTF8(code->co_name);
+			const char* fileName = PyUnicode_AsUTF8(code->co_filename);
+
+			if (sprintf_s(traceback_msg, TRACEBACK_STR_LEN, "File \"%s\", line %i, in\n  %s\n", fileName, lineNr, codeName) < 0)
+			{
+				LUA_MEMORY_ERROR(L);
+			}
+			
+			if (strcat_s(err_msg, err_max, traceback_msg))
+			{
+				err_max *= 4;
+				char* tmp = realloc(err_msg, err_max);
+
+				if (tmp)
+				{
+					err_msg = tmp;
+				}
+				else
+				{
+					LUA_MEMORY_ERROR(L);
+				}
+
+				if (strcat_s(err_msg, err_max, traceback_msg))
+				{
+					LUA_MEMORY_ERROR(L);
+				}
+			}
+
+			pTrace = pTrace->tb_next;
+		}
+
+		free(traceback_msg);
+	}
+
+	PyObject* str_exc_value = PyObject_Repr(pExcValue);
+	PyObject* pExcValueStr = PyUnicode_AsEncodedString(str_exc_value, "utf-8", "Error ~");
+	const char* strExcValue = PyBytes_AS_STRING(pExcValueStr);
+
+	char* err_name = malloc(EXCEPTION_STR_LEN);
+	if (!err_name)
+	{
+		LUA_MEMORY_ERROR(L);
+	}
+
+	if (sprintf_s(err_name, EXCEPTION_STR_LEN, "\n  %s\n", strExcValue) < 0)
+	{
+		LUA_MEMORY_ERROR(L);
+	}
+
+	if (strcat_s(err_msg, err_max, err_name))
+	{
+		err_max *= 2;
+		char* tmp = realloc(err_msg, err_max);
+
+		if (tmp)
+		{
+			err_msg = tmp;
+		}
+		else
+		{
+			LUA_MEMORY_ERROR(L);
+		}
+
+		if (!err_msg)
+		{
+			LUA_MEMORY_ERROR(L);
+		}
+
+		if (strcat_s(err_msg, err_max, err_name))
+		{
+			LUA_MEMORY_ERROR(L);
+		}
+	}
+
+	lua_pushlstring(L, err_msg, err_max);
+	free(err_msg);
+	free(err_name);
+
+	return lua_error(L);
+}
+
 
 
 int call_PyFunc(lua_State* L)
@@ -47,15 +178,18 @@ int call_PyFunc(lua_State* L)
 
 			return 1;
 		}
+		else if (PyErr_Occurred())
+		{
+			return raise_error(L, "Error: While calling python function");
+		}
 		else
 		{
-			PyErr_Print();
-			return luaL_error(L, "Error: While executing function\n");
+			// raise error which even I don't know
 		}
 
 	}
 
-	return luaL_error(L, "Error: Memory Error\n");
+	LUA_MEMORY_ERROR(L);
 }
 
 
@@ -76,8 +210,7 @@ int iter_PyGenerator(lua_State* L, ...)
 
 	if (PyErr_Occurred())
 	{
-		PyErr_Print();
-		return luaL_error(L, "Error: Occurred when iterating Python Object");
+		return raise_error(L, "Error: Occurred when iterating Python Object");
 	}
 
 	return luaL_error(L, "Error: Stop Iteration");
@@ -122,12 +255,9 @@ static int PyLua_PyLoadModule(lua_State* L)
 		PySys_SetPath(new_path);
 
 		pPylua_Module = PyImport_ImportModule("pylua");
-		if (!pPylua_Module) {
-			if (PyErr_Occurred())
-			{
-				PyErr_Print();
-			}
-			return luaL_error(L, "Error: could not import module 'pylua'");
+		if (!pPylua_Module) 
+		{
+			return raise_error(L, "Error: could not import module 'pylua'");
 		}
 
 	}
@@ -153,11 +283,7 @@ static int PyLua_PyLoadModule(lua_State* L)
 		return 1;
 	}
 
-	if (PyErr_Occurred())
-	{
-		PyErr_Print();
-	}
-	return luaL_error(L, "Error: Could Not Import the Python Module");
+	return raise_error(L, "Error: Could Not Import the Python Module");
 }
 
 
@@ -215,11 +341,7 @@ static int PyLua_PyGet(lua_State* L)
 		return x;
 	}
 
-	if (PyErr_Occurred())
-	{
-		PyErr_Print();
-	}
-	return luaL_error(L, "Error: Occurred when getting Python Object");
+	return raise_error(L, "Error: Occurred when getting Python Object");
 }
 
 

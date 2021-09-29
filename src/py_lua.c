@@ -46,7 +46,7 @@ static PyObject* next_LuaCoroutine(PyLua_LuaFunc* self)
 
 	if (self->thread_terminated)
 	{
-		PyErr_SetString(PyExc_StopIteration, "");
+		PyErr_SetNone(PyExc_StopIteration);
 		return NULL;
 	}
 
@@ -103,7 +103,7 @@ static PyObject* next_LuaCoroutine(PyLua_LuaFunc* self)
 			{
 				//return luaL_error(L, "Error: While calling the lua function.");
 
-				PyErr_SetString(LuaError, lua_tostring(L, -1));
+				PyErr_Format(LuaError, "Error raise while executing lua\nLua Error:\n %s", lua_tostring(L, -1));
 				return NULL;
 			}
 			lua_pop(L, 1);
@@ -156,14 +156,14 @@ static PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwa
 	if (self->is_luathread)
 	{
 		// raise error
-		PyErr_SetString(LuaError, "LuaError: Can not call lua thread type");
+		PyErr_SetString(LuaError, "Can not call lua thread type");
 		return NULL;
 	}
 
 	if (kwargs)
 	{
 		// raise error
-		PyErr_SetString(LuaError, "LuaError: Lua function does not accept kwargs");
+		PyErr_SetString(LuaError, "Lua function does not accept keyword arguments");
 		return NULL;
 	}
 
@@ -211,7 +211,7 @@ static PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwa
 			{
 				//return luaL_error(L, "Error: While calling the lua function.");
 
-				PyErr_SetString(LuaError, lua_tostring(L, -1));
+				PyErr_Format(LuaError, "Error raise while executing lua\nLua Error:\n %s", lua_tostring(L, -1));
 				return NULL;
 			}
 
@@ -252,7 +252,7 @@ static PyObject* get_LuaFunc_Wrapper(PyLua_LuaFunc* self, PyObject* args, PyObje
 	if (kwargs)
 	{
 		// raise error
-		PyErr_SetString(LuaError, "LuaError: Lua function does not accept kwargs");
+		PyErr_SetString(LuaError, "Lua function does not accept keyword arguments");
 		return NULL;
 	}
 
@@ -262,8 +262,8 @@ static PyObject* get_LuaFunc_Wrapper(PyLua_LuaFunc* self, PyObject* args, PyObje
 
 	if (!PyArg_ParseTuple(args, "KKi", &a, &b, &is_luathread))
 	{
-		fprintf(stderr, "Error: Wrong args to get_LuaFunc_Wrapper.\n\tPlease Report this Issue");
-		exit(-1);
+		PyErr_SetString(LuaError, "Got wrong arguments to get_LuaFunc_Wrapper");
+		return NULL;
 	}
 
 	self->lStack_prt = (void*)a;
