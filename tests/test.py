@@ -2,6 +2,7 @@ string = "Python"
 number = 121
 double = 1.5
 boolean = False
+multiline = "Python\nLua"
 
 table = {
     "a": "AA",
@@ -67,3 +68,13 @@ def c_range(x):
     while a < x:
         yield a
         a += 1
+
+def err():
+    raise Exception("Test Error")
+
+def raise_error(*args):
+    err()
+
+
+def get_called_notprotected(func):
+    func()

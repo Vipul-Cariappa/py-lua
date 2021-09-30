@@ -87,10 +87,6 @@ function lua_print(x)
     return 3.14
 end
 
-function error_out()
-    error("error")
-end
-
 
 function test_get_called()
     local o = 4;

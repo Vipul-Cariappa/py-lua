@@ -40,7 +40,6 @@ function test_py_coroutine2()
     local range = py_module.c_range(-1)
     local _, x = coroutine.resume(range)
     lu.assertEquals(_, false)
-    lu.assertEquals(x, "Error: Occurred when iterating Python Object")
 end
 
 

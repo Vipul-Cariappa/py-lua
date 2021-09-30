@@ -1,17 +1,16 @@
 lu = require('luaunit')
-
 require("pylua")
 
-py = Python.PyLoad("test")
+py_module = Python.PyLoad("test")
 
-Python.PyUnLoad(py)
+Python.PyUnLoad(py_module)
 
 function error_out()
-    local x = py.string
+    local x = py_module.string
 end
 
 function test_errors()
-    lu.assertError(Python.PyUnLoad, py)
+    lu.assertError(Python.PyUnLoad, py_module)
     lu.assertError(error_out)
 end
 
