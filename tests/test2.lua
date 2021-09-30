@@ -1,7 +1,7 @@
 lu = require('luaunit')
 require("pylua")
 
-py_module = Python.PyLoad("test")
+py_module = Python.PyLoad("test0")
 
 function co()
     coroutine.yield(1)
