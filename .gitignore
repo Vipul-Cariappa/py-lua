@@ -57,3 +57,4 @@ __pycache__/
 # User Defined
 tests/pylua.sh
 tests/luaunit.lua
+tmp*
