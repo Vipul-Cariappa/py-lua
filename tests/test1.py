@@ -52,6 +52,13 @@ class Circle:
             return True
         return False
 
+class Call:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __call__(self, *args, **kwargs):
+        return "Call.__call__ function"
+
 def handle_add(rect1, rect2):
     return rect1 + rect2
 
@@ -72,3 +79,11 @@ def handle_div(rect):
 
 def handle_call(call_obj):
     return call_obj()
+
+
+def pass_object(obj):
+    print(obj)
+    
+
+def add_objects(obj1, obj2):
+    print(obj1 + obj2)

@@ -219,6 +219,33 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 	}
 	else if (type == LUA_TTABLE)
 	{
+		if (lua_getmetatable(L, index))
+		{
+			lua_pop(L, 1);
+			// to python object
+			// can be thought as a class
+			uintptr_t lStack_prt = L;
+			uintptr_t lTable_prt = lua_topointer(L, index);
+
+			PyObject* obj = PyObject_GetAttrString(pPylua_Module, "lua_table_wrapper");
+
+			if (obj)
+			{
+				PyObject* pArgs = Py_BuildValue("(KK)", lStack_prt, lTable_prt);
+
+				PyObject* pReturn = PyObject_CallObject(obj, pArgs);
+				if (pReturn)
+				{
+					return pReturn;
+				}
+			}
+			if (PyErr_Occurred())
+			{
+				PyErr_Print();
+			}
+			return luaL_error(L, "Error: While executing python function");
+
+		}
 		// to dictonary
 	
 		// Push another reference to the table on top of the stack (so we know

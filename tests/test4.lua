@@ -3,15 +3,15 @@ require("pylua")
 
 py_module = Python.PyLoad("test1")
 
-Rectangle = {}
+Rectangle = {length = 0, breadth = 0}
 
 function Rectangle:new(length, breadth)
-   o = {}
-   setmetatable(o, self)
-   self.__index = self
-   self.length = length
-   self.breadth = breadth
-   return o
+    o = {}
+    setmetatable(o, self)
+    o.__index = self
+    o.length = length
+    o.breadth = breadth
+    return o
 end
 
 function Rectangle:get_area()
@@ -86,6 +86,16 @@ r1 = Rectangle:new(1, 2)
 r2 = Rectangle:new(10, 20)
 
 c = Call:new()
+
+
+function test_passing_objects()
+    py_module.pass_object(r1)
+end
+
+
+function test_add_objects()
+    py_module.add_objects(r1, r2)
+end
 
 -- os.exit(lu.LuaUnit.run())
 lu.LuaUnit.run()
