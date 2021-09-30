@@ -3,6 +3,7 @@
 
 #include <wchar.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define TRACEBACK_STR_LEN 256
 #define EXCEPTION_STR_LEN 256
@@ -48,7 +49,7 @@ static int raise_error(lua_State* L, const char* msg)
 	PyErr_Fetch(&pExcType, &pExcValue, &pExcTraceback);
 	PyErr_NormalizeException(&pExcType, &pExcValue, &pExcTraceback);
 
-	if (PyTraceBack_Check(pExcTraceback))
+	if (pExcTraceback && PyTraceBack_Check(pExcTraceback))
 	{
 		PyTracebackObject* pTrace = (PyTracebackObject*)pExcTraceback;
 
@@ -99,7 +100,7 @@ static int raise_error(lua_State* L, const char* msg)
 	}
 
 	PyObject* str_exc_value = PyObject_Repr(pExcValue);
-	PyObject* pExcValueStr = PyUnicode_AsEncodedString(str_exc_value, "utf-8", "Error ~");
+	PyObject* pExcValueStr = PyUnicode_AsEncodedString(str_exc_value, "utf-8", "strict");
 	const char* strExcValue = PyBytes_AS_STRING(pExcValueStr);
 
 	char* err_name = malloc(EXCEPTION_STR_LEN);
@@ -108,7 +109,9 @@ static int raise_error(lua_State* L, const char* msg)
 		LUA_MEMORY_ERROR(L);
 	}
 
-	if (sprintf_s(err_name, EXCEPTION_STR_LEN, "\n  %s\n", strExcValue) < 0)
+	char* new_strExcValue = str_replace(strExcValue, "\\n", "\n");
+
+	if (sprintf_s(err_name, EXCEPTION_STR_LEN, "\n  %s\n", new_strExcValue) < 0)
 	{
 		LUA_MEMORY_ERROR(L);
 	}
@@ -138,9 +141,18 @@ static int raise_error(lua_State* L, const char* msg)
 		}
 	}
 
-	lua_pushlstring(L, err_msg, err_max);
+	lua_pushstring(L, err_msg);
+
+	Py_XDECREF(pExcType);
+	Py_XDECREF(pExcValue);
+	Py_XDECREF(pExcTraceback);
+
+	Py_XDECREF(str_exc_value);
+	Py_XDECREF(pExcValueStr);
+
 	free(err_msg);
 	free(err_name);
+	free(new_strExcValue);
 
 	return lua_error(L);
 }

@@ -103,7 +103,7 @@ static PyObject* next_LuaCoroutine(PyLua_LuaFunc* self)
 			{
 				//return luaL_error(L, "Error: While calling the lua function.");
 
-				PyErr_Format(LuaError, "Error raise while executing lua\nLua Error:\n %s", lua_tostring(L, -1));
+				PyErr_Format(LuaError, "\nError raise while executing lua\nLua Traceback:\n %s\n", lua_tostring(L, -1));
 				return NULL;
 			}
 			lua_pop(L, 1);
@@ -211,7 +211,7 @@ static PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwa
 			{
 				//return luaL_error(L, "Error: While calling the lua function.");
 
-				PyErr_Format(LuaError, "Error raise while executing lua\nLua Error:\n %s", lua_tostring(L, -1));
+				PyErr_Format(LuaError, "\nError raise while executing lua\nLua Traceback:\n %s\n", lua_tostring(L, -1));
 				return NULL;
 			}
 

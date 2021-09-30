@@ -87,10 +87,6 @@ function lua_print(x)
     return 3.14
 end
 
-function error_out()
-    error("error")
-end
-
 
 function test_get_called()
     local o = 4;
@@ -100,10 +96,6 @@ function test_get_called()
     py_module.get_called(nested)
     py_module.get_called(lua_print)
     py_module.get_called(error_out)
-end
-
-function test_python_error()
-    lu.assertError(py_module.raise_error)
 end
 
 -- os.exit(lu.LuaUnit.run())
