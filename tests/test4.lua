@@ -8,7 +8,7 @@ Rectangle = {length = 0, breadth = 0}
 function Rectangle:new(length, breadth)
     o = {}
     setmetatable(o, self)
-    o.__index = self
+    self.__index = self
     o.length = length
     o.breadth = breadth
     return o
@@ -93,8 +93,8 @@ function test_passing_objects()
 end
 
 
-function test_add_objects()
-    py_module.add_objects(r1, r2)
+function test_operations_objects()
+    py_module.operations_on_objects(r1, r2)
 end
 
 -- os.exit(lu.LuaUnit.run())

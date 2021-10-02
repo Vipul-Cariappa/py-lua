@@ -82,16 +82,21 @@ def handle_call(call_obj):
 
 
 def pass_object(obj):
-    print(f"{obj.length = }")
+    assert obj.length == 1
+    assert obj.breadth == 2
     
 
-def add_objects(obj1, obj2):
-    # print(obj1 + obj2)
-    print(f"{obj1.length = }")
-    print(f"{obj2.length = }")
-    print(f"{(obj1 - obj2).length = }")
-    print(f"{(obj2 - obj1).length = }")
-    # print(f"{(obj1 * 5).length = }")
-    
-    # print(f"{(obj2 - obj1).length = }")
-    # print(f"{(obj1 - obj2).length = }")
+def operations_on_objects(obj1, obj2):
+    # arithmetic operations
+    assert (obj1 + obj2).length == 11
+    assert (obj1 - obj2).breadth == -18
+    assert (obj1 * 5).breadth == 10
+    assert (obj2 / 2).length == 5
+
+    # relational operators
+    assert (obj1 < obj2) == True
+    assert (obj1 <= obj2) == True
+    assert (obj1 == obj2) == False
+    assert (obj1 != obj2) == True
+    assert (obj1 > obj2) == False
+    assert (obj1 >= obj2) == False

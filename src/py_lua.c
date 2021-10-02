@@ -47,6 +47,24 @@ static PyObject* create_return(lua_State* L, int len)
 	return pReturn;
 }
 
+static PyObject* flip_boolean(PyObject* ob)
+{
+	if (ob == Py_True)
+	{
+		Py_DECREF(ob);
+		ob = Py_False;
+		Py_INCREF(ob);
+	}
+	else
+	{
+		Py_DECREF(ob);
+		ob = Py_True;
+		Py_INCREF(ob);
+	}
+
+	return ob;
+}
+
 static PyObject* next_LuaCoroutine(PyLua_LuaFunc* self)
 {
 	PyObject* pReturn = NULL;
@@ -497,9 +515,37 @@ static PyObject* floordiv_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* other
 
 static PyObject* compare_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* other, int op)
 {
-	printf("Called compare_LuaTable_Wrapper Op: %i\n", op);
+	PyObject* pReturn;
 
-	Py_RETURN_TRUE;
+	switch (op)
+	{
+	case 0:
+		pReturn = operation_LuaTable_base(self, other, "__lt");
+		break;
+	case 1:
+		pReturn = operation_LuaTable_base(self, other, "__le");
+		break;
+	case 2:
+		pReturn = operation_LuaTable_base(self, other, "__eq");
+		break;
+	case 3:
+		pReturn = operation_LuaTable_base(self, other, "__eq");
+		pReturn = flip_boolean(pReturn);
+		break;
+	case 4:
+		pReturn = operation_LuaTable_base(self, other, "__lt");
+		pReturn = flip_boolean(pReturn);
+		break;
+	case 5:
+		pReturn = operation_LuaTable_base(self, other, "__le");
+		pReturn = flip_boolean(pReturn);
+		break;
+	default:
+		pReturn = NULL;
+		break;
+	}
+
+	return pReturn;
 }
 
 static PyObject* neg_LuaTable_Wrapper(PyLua_LuaTable* self)
