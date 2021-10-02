@@ -41,6 +41,10 @@ function Rectangle:__div(other)
     return self * (1/other)
 end
 
+function Rectangle:__unm()
+    return Rectangle:new(self.length * -1, self.breadth * -1)
+end
+
 function Rectangle:__eq(other)
     if self.lenght == other.length and self.breadth == other.breadth then
         return true

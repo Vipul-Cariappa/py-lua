@@ -93,6 +93,10 @@ def operations_on_objects(obj1, obj2):
     assert (obj1 * 5).breadth == 10
     assert (obj2 / 2).length == 5
 
+    # unary operations
+    assert (-obj1).length == -1
+    assert (-obj1).breadth == -2
+
     # relational operators
     assert (obj1 < obj2) == True
     assert (obj1 <= obj2) == True

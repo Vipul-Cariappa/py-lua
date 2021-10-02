@@ -550,9 +550,7 @@ static PyObject* compare_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* other,
 
 static PyObject* neg_LuaTable_Wrapper(PyLua_LuaTable* self)
 {
-	printf("Called neg_LuaTable_Wrapper\n");
-
-	Py_RETURN_TRUE;
+	return operation_LuaTable_base(self, Py_None, "__unm");
 }
 
 
