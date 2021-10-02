@@ -82,8 +82,16 @@ def handle_call(call_obj):
 
 
 def pass_object(obj):
-    print(obj)
+    print(f"{obj.length = }")
     
 
 def add_objects(obj1, obj2):
-    print(obj1 + obj2)
+    # print(obj1 + obj2)
+    print(f"{obj1.length = }")
+    print(f"{obj2.length = }")
+    print(f"{(obj1 - obj2).length = }")
+    print(f"{(obj2 - obj1).length = }")
+    # print(f"{(obj1 * 5).length = }")
+    
+    # print(f"{(obj2 - obj1).length = }")
+    # print(f"{(obj1 - obj2).length = }")

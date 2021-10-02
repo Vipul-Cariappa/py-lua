@@ -34,7 +34,7 @@ function Rectangle:__sub(other)
 end
 
 function Rectangle:__mul(other)
-    return Rectangle:new(self.length - other, self.breadth - other)
+    return Rectangle:new(self.length * other, self.breadth * other)
 end
 
 function Rectangle:__div(other)

@@ -15,6 +15,7 @@ typedef struct PyLua_LuaTable {
 	void* lTable_prt;
 } PyLua_LuaTable;
 
+static PyTypeObject pLuaTable_Type;
 
 static PyObject* LuaError;
 
@@ -313,10 +314,6 @@ static void stack_operation(lua_State* L, void* self, void* other)
 			// found the function
 			if (found_table1)
 			{
-				if (other)
-				{
-					// raise internal error
-				}
 				found_table2 = 1;
 			}
 			else
@@ -327,13 +324,13 @@ static void stack_operation(lua_State* L, void* self, void* other)
 			lua_pushvalue(L, -1);
 
 			// replace the top element with placeholder
-			if (found_table2)
+			if (lua_topointer(L, -1) == self)
 			{
-				lua_replace(L, stack_size + 2);
+				lua_replace(L, stack_size + 1);
 			}
 			else
 			{
-				lua_replace(L, stack_size + 1);
+				lua_replace(L, stack_size + 2);
 			}
 
 		}
@@ -424,7 +421,15 @@ static PyObject* operation_LuaTable_base(PyLua_LuaTable* self, PyObject* other, 
 	lua_pushnil(L);
 
 	// get the two elements self and other
-	stack_operation(L, self->lTable_prt, ((PyLua_LuaTable*)other)->lTable_prt);
+	if (PyObject_IsInstance(other, (PyObject*)&pLuaTable_Type))
+	{
+		stack_operation(L, self->lTable_prt, ((PyLua_LuaTable*)other)->lTable_prt);
+	}
+	else
+	{
+		stack_operation(L, self->lTable_prt, NULL);
+		PyLua_PythonToLua(L, other);
+	}
 
 	// get the add function
 	lua_getmetatable(L, -2);
