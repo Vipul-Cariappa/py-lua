@@ -109,5 +109,11 @@ function test_operations_objects()
     py_module.operations_on_objects(r1, r2)
 end
 
+function test_setattr_python()
+    lu.assertEquals(c.python, nil)
+    py_module.insert_new(c)
+    lu.assertEquals(c.python, "New Object")
+end
+
 -- os.exit(lu.LuaUnit.run())
 lu.LuaUnit.run()

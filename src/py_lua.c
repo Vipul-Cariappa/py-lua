@@ -388,43 +388,6 @@ static void stack_operation(lua_State* L, void* self, void* other)
 
 }
 
-static PyObject* getattr_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* attr)
-{
-	PyObject* pReturn = NULL;
-
-	lua_State* L = (lua_State*)self->lStack_prt;
-
-	// stack size matching
-	int stack_size = lua_gettop(L);
-
-	// get the two elements self and other
-	stack_operation(L, self->lTable_prt, NULL);
-
-	// attr to string
-	PyObject* encodedString = PyUnicode_AsEncodedString(attr, "UTF-8", "strict");
-	if (encodedString)
-	{
-		const char* attr_str = PyBytes_AsString(encodedString);
-		if (attr_str)
-		{
-			lua_getfield(L, -1, attr_str);
-			pReturn = PyLua_LuaToPython(L, -1);
-		}
-		Py_DECREF(encodedString);
-	}
-
-	lua_pop(L, 2);
-
-	if (stack_size != lua_gettop(L))
-	{
-		// raise internal error
-		fprintf(stderr, "Error: Stack size not same.\n\tPlease Report this Issue");
-		exit(-1);
-	}
-
-	return pReturn;
-}
-
 static PyObject* operation_LuaTable_base(PyLua_LuaTable* self, PyObject* other, const char* op)
 {
 	PyObject* pReturn;
@@ -476,6 +439,67 @@ static PyObject* operation_LuaTable_base(PyLua_LuaTable* self, PyObject* other, 
 	}
 
 	return pReturn;
+}
+
+static PyObject* getattr_LuaTable_Wrapper(PyLua_LuaTable* self, char* attr)
+{
+	PyObject* pReturn = NULL;
+
+	lua_State* L = (lua_State*)self->lStack_prt;
+
+	// stack size matching
+	int stack_size = lua_gettop(L);
+
+	// get the two elements self and other
+	stack_operation(L, self->lTable_prt, NULL);
+	
+	// get item
+	lua_getfield(L, -1, attr);
+	pReturn = PyLua_LuaToPython(L, -1);
+
+	lua_pop(L, 2);
+
+	if (stack_size != lua_gettop(L))
+	{
+		// raise internal error
+		fprintf(stderr, "Error: Stack size not same.\n\tPlease Report this Issue");
+		exit(-1);
+	}
+
+	return pReturn;
+}
+
+static int setattr_LuaTable_Wrapper(PyLua_LuaTable* self, char* attr, PyObject* value)
+{
+	// delete the value at the given attr
+	if (!value)
+	{
+		// to be implemented
+		return 0;
+	}
+
+	lua_State* L = (lua_State*)self->lStack_prt;
+
+	// stack size matching
+	int stack_size = lua_gettop(L);
+
+	// get the two elements self and other
+	stack_operation(L, self->lTable_prt, NULL);
+
+	// set attr
+	PyLua_PythonToLua(L, value);
+	lua_setfield(L, -2, attr);
+
+	lua_pop(L, 1);
+
+	if (stack_size != lua_gettop(L))
+	{
+		// raise internal error
+		fprintf(stderr, "Error: Stack size not same.\n\tPlease Report this Issue");
+		exit(-1);
+	}
+
+	return 0;
 }
 
 static PyObject* add_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* other)
@@ -689,7 +713,8 @@ static PyTypeObject pLuaTable_Type = {
 	.tp_as_number = &pLuaTable_NumberMethods,
 	.tp_as_mapping = &pLuaTable_MappingMethods,
 	.tp_richcompare = compare_LuaTable_Wrapper,
-	.tp_getattro = getattr_LuaTable_Wrapper,
+	.tp_getattr = getattr_LuaTable_Wrapper,
+	.tp_setattr = setattr_LuaTable_Wrapper,
 	// TODO: implement __setattr__
 };
 
