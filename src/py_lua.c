@@ -662,6 +662,11 @@ static PyObject* compare_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* other,
 	return pReturn;
 }
 
+static PyObject* string_LuaTable_Wrapper(PyLua_LuaTable* self)
+{
+	return operation_LuaTable_base(self, Py_None, "__tostring");
+}
+
 static PyObject* neg_LuaTable_Wrapper(PyLua_LuaTable* self)
 {
 	return operation_LuaTable_base(self, Py_None, "__unm");
@@ -774,6 +779,7 @@ static PyTypeObject pLuaTable_Type = {
 	.tp_getattr = getattr_LuaTable_Wrapper,
 	.tp_setattr = setattr_LuaTable_Wrapper,
 	.tp_call = call_LuaTable_Wrapper,
+	.tp_str = string_LuaTable_Wrapper,
 };
 
 

@@ -14,6 +14,10 @@ function Rectangle:new(length, breadth)
     return o
 end
 
+function Rectangle:__tostring()
+    return "Rectangle(length = " .. tostring(self.length) .. ", Breadth = " .. tostring(self.breadth) .. ")"
+end
+
 function Rectangle:get_area()
     self.area = self.length * self.breadth
     return self.area
