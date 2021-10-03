@@ -369,6 +369,8 @@ __declspec(dllexport)
 #endif
 int luaopen_pylua(lua_State* L) {
 	// python module
+	luaL_newlib(L, PY_lib);
+
 	luaL_newmetatable(L, "Python.Module");
 	lua_pushstring(L, "__gc");
 	lua_pushcfunction(L, PyLua_PyUnloadModule);
@@ -379,7 +381,8 @@ int luaopen_pylua(lua_State* L) {
 	lua_pushstring(L, "__newindex");
 	lua_pushcfunction(L, PyLua_PySet);
 	lua_settable(L, -3);
-	luaL_setfuncs(L, PY_lib, 0);
+	lua_setmetatable(L, -2);
+
 	lua_setglobal(L, "Python");
 
 	return 1;
