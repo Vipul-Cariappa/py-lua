@@ -59,23 +59,6 @@ class Call:
     def __call__(self, *args, **kwargs):
         return "Call.__call__ function"
 
-def handle_add(rect1, rect2):
-    return rect1 + rect2
-
-def handle_add_int(rect):
-    return rect + 10
-
-def handle_sub(rect1, rect2):
-    return rect1 - rect2
-
-def handle_sub_int(rect):
-    return rect - 10
-
-def handle_mul(rect):
-    return rect * 2
-
-def handle_div(rect):
-    return rect / 2
 
 def handle_call(call_obj):
     return call_obj()
@@ -109,3 +92,10 @@ def operations_on_objects(obj1, obj2):
 
 def insert_new(obj):
     obj.python = "New Object"
+
+
+def obj_bnot(this, *args):
+    return 10
+
+# def insert_func(obj):
+#     obj.__bnot = obj_bnot

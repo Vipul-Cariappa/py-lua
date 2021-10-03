@@ -269,7 +269,6 @@ static PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwa
 	}
 
 	return pReturn;
-
 }
 
 static PyObject* get_LuaFunc_Wrapper(PyLua_LuaFunc* self, PyObject* args, PyObject* kwargs)
@@ -398,7 +397,7 @@ static PyObject* operation_LuaTable_base(PyLua_LuaTable* self, PyObject* other, 
 	// stack size matching
 	int stack_size = lua_gettop(L);
 
-	// placeholder for add function
+	// placeholder for function
 	lua_pushnil(L);
 
 	// get the two elements self and other
@@ -412,7 +411,7 @@ static PyObject* operation_LuaTable_base(PyLua_LuaTable* self, PyObject* other, 
 		PyLua_PythonToLua(L, other);
 	}
 
-	// get the add function
+	// get the function
 	lua_getmetatable(L, -2);
 	lua_getfield(L, -1, op);
 	lua_replace(L, stack_size + 1);
@@ -500,6 +499,65 @@ static int setattr_LuaTable_Wrapper(PyLua_LuaTable* self, char* attr, PyObject* 
 	}
 
 	return 0;
+}
+
+static PyObject* call_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* args, PyObject* kwargs)
+{
+	if (kwargs)
+	{
+		// raise error
+		PyErr_SetString(LuaError, "Lua function does not accept keyword arguments");
+		return NULL;
+	}
+
+	PyObject* pReturn;
+
+	lua_State* L = (lua_State*)self->lStack_prt;
+	lua_checkstack(L, 5);
+
+	// stack size matching
+	int stack_size = lua_gettop(L);
+
+	// placeholder for call function
+	lua_pushnil(L);
+
+	// get self & function
+	stack_operation(L, self->lTable_prt, NULL);
+	lua_getmetatable(L, -1);
+	lua_getfield(L, -1, "__call");
+	lua_replace(L, stack_size + 1);
+	lua_pop(L, 1);
+
+	Py_ssize_t arg_len = PyTuple_Size(args);
+	
+	// python to lua
+	for (int i = 0; i < arg_len; i++)
+	{
+		PyLua_PythonToLua(L, PyTuple_GetItem(args, i));
+	}
+
+	// call the function
+	if (lua_pcall(L, arg_len + 1, LUA_MULTRET, 0) != LUA_OK)
+	{
+		//return luaL_error(L, "Error: While calling the lua function.");
+
+		PyErr_Format(LuaError, "\nError raise while executing lua\nLua Traceback:\n %s\n", lua_tostring(L, -1));
+		return NULL;
+	}
+
+	int return_len = lua_gettop(L) - stack_size;
+
+	pReturn = create_return(L, return_len);
+	lua_pop(L, return_len);
+
+	// check stack size
+	if (lua_gettop(L) != stack_size)
+	{
+		fprintf(stderr, "Error: Stack size not same.\n\tPlease Report this Issue");
+		exit(-1);
+	}
+
+	return pReturn;
 }
 
 static PyObject* add_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* other)
@@ -715,7 +773,7 @@ static PyTypeObject pLuaTable_Type = {
 	.tp_richcompare = compare_LuaTable_Wrapper,
 	.tp_getattr = getattr_LuaTable_Wrapper,
 	.tp_setattr = setattr_LuaTable_Wrapper,
-	// TODO: implement __setattr__
+	.tp_call = call_LuaTable_Wrapper,
 };
 
 

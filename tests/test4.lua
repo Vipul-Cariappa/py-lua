@@ -89,7 +89,7 @@ function Call:new()
     return o
 end
 
-function Call:__call(other)
+function Call:__call()
     return "Call:_call function"
 end
 
@@ -114,6 +114,19 @@ function test_setattr_python()
     py_module.insert_new(c)
     lu.assertEquals(c.python, "New Object")
 end
+
+function test_call_table_from_python()
+    lu.assertEquals(py_module.handle_call(c), "Call:_call function")
+end
+
+-- function test_operations_overwriting()
+--     lu.assertError(Call.__add, c, c)
+--     py_module.insert_func(Call)
+--     lu.assertEquals(~c, 10)
+--     -- print(c, c.__call)
+--     -- print(Call, Call.__call)
+--     -- print(Call.__bnot, c.__bnot)
+-- end
 
 -- os.exit(lu.LuaUnit.run())
 lu.LuaUnit.run()
