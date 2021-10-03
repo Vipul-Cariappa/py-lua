@@ -45,6 +45,14 @@ function Rectangle:__unm()
     return Rectangle:new(self.length * -1, self.breadth * -1)
 end
 
+function Rectangle:__bnot()
+    return -1
+end
+
+function Rectangle:__len()
+    return 0
+end
+
 function Rectangle:__eq(other)
     if self.lenght == other.length and self.breadth == other.breadth then
         return true

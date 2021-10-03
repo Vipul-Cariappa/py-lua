@@ -104,3 +104,5 @@ def operations_on_objects(obj1, obj2):
     assert (obj1 != obj2) == True
     assert (obj1 > obj2) == False
     assert (obj1 >= obj2) == False
+    assert len(obj1) == 0
+    assert ~obj1 == -1

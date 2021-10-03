@@ -480,6 +480,7 @@ static PyObject* operation_LuaTable_base(PyLua_LuaTable* self, PyObject* other, 
 
 static PyObject* add_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* other)
 {
+	// TODO: add support for __concat
 	return operation_LuaTable_base(self, other, "__add");
 }
 
@@ -512,6 +513,37 @@ static PyObject* floordiv_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* other
 {
 	return operation_LuaTable_base(self, other, "__idiv");
 }
+
+static PyObject* band_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* other)
+{
+	return operation_LuaTable_base(self, other, "__band");
+}
+
+static PyObject* bor_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* other)
+{
+	return operation_LuaTable_base(self, other, "__bor");
+}
+
+static PyObject* bxor_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* other)
+{
+	return operation_LuaTable_base(self, other, "__bxor");
+}
+
+static PyObject* lshift_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* other)
+{
+	return operation_LuaTable_base(self, other, "__shl");
+}
+
+static PyObject* rshift_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* other)
+{
+	return operation_LuaTable_base(self, other, "__shr");
+}
+
+static PyObject* bnot_LuaTable_Wrapper(PyLua_LuaTable* self)
+{
+	return operation_LuaTable_base(self, Py_None, "__bnot");
+}
+
 
 static PyObject* compare_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* other, int op)
 {
@@ -553,6 +585,36 @@ static PyObject* neg_LuaTable_Wrapper(PyLua_LuaTable* self)
 	return operation_LuaTable_base(self, Py_None, "__unm");
 }
 
+static Py_ssize_t len_LuaTable_Wrapper(PyLua_LuaTable* self)
+{
+	Py_ssize_t x;
+	
+	PyObject* pObj = operation_LuaTable_base(self, Py_None, "__len");
+	if (!pObj)
+	{
+		return -1;
+	}
+	
+	PyObject* pReturn = PyNumber_Long(pObj);
+	if (pReturn)
+	{
+		x = PyNumber_AsSsize_t(pReturn, NULL);
+		if (x < 0)
+		{
+			PyErr_Format(LuaError, "__len function did not return non negative interger");
+		}
+	}
+	else
+	{
+		x = -1;
+		PyErr_Format(LuaError, "__len function did not return integer");
+	}
+
+	Py_DECREF(pObj);
+	Py_XDECREF(pReturn);
+	return x;
+}
+
 
 static PyObject* get_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* args, PyObject* kwargs)
 {
@@ -592,6 +654,12 @@ static PyTypeObject pLuaFunc_Type = {
 	.tp_iternext = next_LuaCoroutine
 };
 
+static PyMappingMethods pLuaTable_MappingMethods = {
+	.mp_length = len_LuaTable_Wrapper,
+	//.mp_subscript = ,
+	//.mp_ass_subscript = ,
+};
+
 static PyNumberMethods pLuaTable_NumberMethods = {
 	.nb_add = add_LuaTable_Wrapper,
 	.nb_subtract = sub_LuaTable_Wrapper,
@@ -601,6 +669,12 @@ static PyNumberMethods pLuaTable_NumberMethods = {
 	.nb_power = pow_LuaTable_Wrapper,
 	.nb_remainder = mod_LuaTable_Wrapper,
 	.nb_negative = neg_LuaTable_Wrapper,
+	.nb_lshift = lshift_LuaTable_Wrapper,
+	.nb_rshift = rshift_LuaTable_Wrapper,
+	.nb_and = band_LuaTable_Wrapper,
+	.nb_or = bor_LuaTable_Wrapper,
+	.nb_xor = bxor_LuaTable_Wrapper,
+	.nb_invert = bnot_LuaTable_Wrapper,
 };
 
 static PyTypeObject pLuaTable_Type = {
@@ -613,8 +687,10 @@ static PyTypeObject pLuaTable_Type = {
 	.tp_new = PyType_GenericNew,
 	.tp_init = get_LuaTable_Wrapper,
 	.tp_as_number = &pLuaTable_NumberMethods,
+	.tp_as_mapping = &pLuaTable_MappingMethods,
 	.tp_richcompare = compare_LuaTable_Wrapper,
 	.tp_getattro = getattr_LuaTable_Wrapper,
+	// TODO: implement __setattr__
 };
 
 
