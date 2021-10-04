@@ -164,7 +164,7 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
 		PyLua_PyIterator* py_iter = (PyLua_PyIterator*)lua_newuserdata(n, nbytes);
 
 		PyObject* iter = PyObject_GetIter(pItem);
-		
+
 		if (!iter)
 		{
 			PyErr_Print();
@@ -221,9 +221,34 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 	{
 		if (lua_getmetatable(L, index))
 		{
-			lua_pop(L, 1);
-			// to python object
-			// can be thought as a class
+			// to python instance
+			
+			lua_pop(L, 1); // remove metatable
+
+			uintptr_t lStack_prt = L;
+			uintptr_t lTable_prt = lua_topointer(L, index);
+
+			PyObject* obj = PyObject_GetAttrString(pPylua_Module, "lua_instance_wrapper");
+
+			if (obj)
+			{
+				PyObject* pArgs = Py_BuildValue("(KK)", lStack_prt, lTable_prt);
+
+				PyObject* pReturn = PyObject_CallObject(obj, pArgs);
+				if (pReturn)
+				{
+					return pReturn;
+				}
+			}
+			if (PyErr_Occurred())
+			{
+				PyErr_Print();
+			}
+			return luaL_error(L, "Error: While executing python function");
+
+		}
+		else
+		{
 			uintptr_t lStack_prt = L;
 			uintptr_t lTable_prt = lua_topointer(L, index);
 
@@ -244,56 +269,8 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 				PyErr_Print();
 			}
 			return luaL_error(L, "Error: While executing python function");
-
-		}
-		// to dictonary
-	
-		// Push another reference to the table on top of the stack (so we know
-		// where it is, and this function can work for negative, positive and
-		// pseudo indices
-		lua_pushvalue(L, index);
-		// stack now contains: -1 => table
-
-		lua_pushnil(L);
-		// stack now contains: -1 => nil; -2 => table
-
-		// length of table
-		//int len = luaL_len(L, index);
-
-		pItem = PyDict_New();
-
-		if (pItem)
-		{
-			PyObject* pKey;
-			PyObject* pValue;
-
-			while (lua_next(L, -2))
-			{
-				// stack now contains: -1 => value; -2 => key; -3 => table
-				// copy the key so that lua_tostring does not modify the original
-				lua_pushvalue(L, -2);
-
-				// stack now contains: -1 => key; -2 => value; -3 => key; -4 => table
-				pKey = PyLua_LuaToPython(L, -1);
-				pValue = PyLua_LuaToPython(L, -2);
-				PyDict_SetItem(pItem, pKey, pValue);
-				Py_DECREF(pKey);
-				Py_DECREF(pValue);
-
-				// pop value + copy of key, leaving original key
-				lua_pop(L, 2);
-				// stack now contains: -1 => key; -2 => table
-			}
-			// stack now contains: -1 => table (when lua_next returns 0 it pops the key
-			// but does not push anything.)
-			// Pop table
-			lua_pop(L, 1);
-			// Stack is now the same as it was on entry to this function
-
-			return pItem;
 		}
 
-		return luaL_error(L, "Error: Memory Error");
 	}
 	else if (type == LUA_TFUNCTION)
 	{
@@ -343,7 +320,7 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 		}
 		return luaL_error(L, "Error: While executing python function");
 	}
-	
+
 	fprintf(stderr, "Error: While converting Lua type to Python type");
 	exit(-1);
 }

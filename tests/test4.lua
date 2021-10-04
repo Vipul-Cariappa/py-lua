@@ -16,6 +16,7 @@ end
 
 function Rectangle:__tostring()
     return "Rectangle(length = " .. tostring(self.length) .. ", Breadth = " .. tostring(self.breadth) .. ")"
+    -- return "Rectangle"
 end
 
 function Rectangle:get_area()
@@ -123,14 +124,15 @@ function test_call_table_from_python()
     lu.assertEquals(py_module.handle_call(c), "Call:_call function")
 end
 
--- function test_operations_overwriting()
---     lu.assertError(Call.__add, c, c)
---     py_module.insert_func(Call)
---     lu.assertEquals(~c, 10)
---     -- print(c, c.__call)
---     -- print(Call, Call.__call)
---     -- print(Call.__bnot, c.__bnot)
--- end
+function test_classes_python()
+    -- py_module.test_lua_class(Rectangle)
+    -- py_module.test_lua_class(r2)
+    s = {l=1,b=2}
+    py_module.test_lua_class(s)
+    -- for k, v in pairs(s) do
+    --     print(k, v)
+    -- end
+end
 
 -- os.exit(lu.LuaUnit.run())
 lu.LuaUnit.run()

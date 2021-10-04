@@ -65,7 +65,7 @@ def handle_call(call_obj):
 
 
 def pass_object(obj):
-    assert str(obj) == "Rectangle(length = 1, Breadth = 2)"
+    # assert str(obj) == "Rectangle(length = 1, Breadth = 2)"
     assert obj.length == 1
     assert obj.breadth == 2
     
@@ -98,5 +98,15 @@ def insert_new(obj):
 def obj_bnot(this, *args):
     return 10
 
-# def insert_func(obj):
-#     obj.__bnot = obj_bnot
+def test_lua_class(rect):
+    print(rect["b"])
+    # print(dir(rect))
+    # print(rect.length)
+    # rect["la"] = 2
+    # print(rect.length)
+    # print(rect.__str__)
+    # print(dir(rect))
+    pass
+
+def tmp(o):
+    print(o, flush=True)

@@ -31,7 +31,7 @@ static int raise_error(lua_State* L, const char* msg)
 	}
 
 	size_t err_max = 1024;
-	
+
 	char* err_msg = malloc(err_max);
 	if (!err_msg)
 	{
@@ -72,7 +72,7 @@ static int raise_error(lua_State* L, const char* msg)
 			{
 				LUA_MEMORY_ERROR(L);
 			}
-			
+
 			if (strcat_s(err_msg, err_max, traceback_msg))
 			{
 				err_max *= 4;
@@ -267,7 +267,7 @@ static int PyLua_PyLoadModule(lua_State* L)
 		PySys_SetPath(new_path);
 
 		pPylua_Module = PyImport_ImportModule("pylua");
-		if (!pPylua_Module) 
+		if (!pPylua_Module)
 		{
 			return raise_error(L, "Error: could not import module 'pylua'");
 		}
