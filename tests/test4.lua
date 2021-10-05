@@ -98,6 +98,10 @@ function Call:__call()
     return "Call:_call function"
 end
 
+function Call:__concat()
+    return "Call:_concat function"
+end
+
 
 r1 = Rectangle:new(1, 2)
 r2 = Rectangle:new(10, 20)
@@ -125,13 +129,7 @@ function test_call_table_from_python()
 end
 
 function test_classes_python()
-    -- py_module.test_lua_class(Rectangle)
-    -- py_module.test_lua_class(r2)
-    s = {l=1,b=2}
-    py_module.test_lua_class(s)
-    -- for k, v in pairs(s) do
-    --     print(k, v)
-    -- end
+    py_module.test_lua_class(Rectangle)
 end
 
 -- os.exit(lu.LuaUnit.run())
