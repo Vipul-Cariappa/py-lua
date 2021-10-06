@@ -158,7 +158,6 @@ static int raise_error(lua_State* L, const char* msg)
 }
 
 
-
 int call_PyFunc(lua_State* L)
 {
 	int args_count = lua_gettop(L);
@@ -228,6 +227,18 @@ int iter_PyGenerator(lua_State* L, ...)
 	return luaL_error(L, "Error: Stop Iteration");
 }
 
+
+static int add_pythonobj_wrapper(lua_State* L)
+{
+	lua_getfield(L, 1, "__python");
+	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
+	lua_pop(L, 1); // remove userdata
+
+	PyObject* other = PyLua_LuaToPython(L, 2);
+	PyObject* pReturn = PyNumber_Add(py_obj->object, other);
+
+	return PyLua_PythonToLua(L, pReturn);
+}
 
 
 static int PyLua_PyLoadModule(lua_State* L)
@@ -363,6 +374,11 @@ static const struct luaL_Reg PY_lib[] = {
 	{NULL, NULL}
 };
 
+static const struct luaL_Reg PY_Call_Wrapper[] = {
+	{"__add", add_pythonobj_wrapper},
+	{NULL, NULL}
+};
+
 
 #if defined(_WIN32)
 __declspec(dllexport)
@@ -384,6 +400,9 @@ int luaopen_pylua(lua_State* L) {
 	lua_setmetatable(L, -2);
 
 	lua_setglobal(L, "Python");
+	
+	luaL_newlib(L, PY_Call_Wrapper);
+	lua_setglobal(L, "PythonClassWrapper");
 
 	return 1;
 }

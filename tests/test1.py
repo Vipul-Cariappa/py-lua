@@ -59,6 +59,9 @@ class Call:
     def __call__(self, *args, **kwargs):
         return "Call.__call__ function"
 
+c1 = Circle(1)
+c2 = Circle(2)
+f = Call()
 
 def handle_call(call_obj):
     return call_obj()
@@ -103,3 +106,6 @@ def test_lua_class(rect):
     # assert r.get_area() == 24
     assert r.length == 4
     assert r.breadth == 6
+
+def return_me(o):
+    return o

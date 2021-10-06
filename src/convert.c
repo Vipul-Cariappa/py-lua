@@ -3,6 +3,8 @@
 
 // lua_py.c
 PyObject* pPylua_Module;
+PyTypeObject pLuaInstance_Type;
+PyTypeObject pLuaTable_Type;
 int call_PyFunc(lua_State* L);
 int iter_PyGenerator(lua_State* L, ...);
 
@@ -177,6 +179,75 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
 
 		return 1;
 	}
+	else
+	{
+		// assume class or instance
+
+		// check if python object is wrapper around lua table
+		if (PyObject_IsInstance(pItem, (PyObject*)&pLuaInstance_Type) || PyObject_IsInstance(pItem, (PyObject*)&pLuaInstance_Type))
+		{			
+			// make sure size of stact is +2 or +1 more then now at exit
+			int stack_size = lua_gettop(L);
+
+			// make sure of enough space in stack
+			lua_checkstack(L, 5);
+
+			// error message if table is not found
+			int found_table = 0;
+
+			// place holder for table
+			lua_pushnil(L);
+
+			// get list of variables from lua
+			lua_getglobal(L, "_G");
+
+			lua_pushnil(L);
+
+			// iterate over them to find the function
+			while (lua_next(L, -2))
+			{
+				if (lua_topointer(L, -1) == ((PyLua_LuaTable*)pItem)->lTable_prt)
+				{
+					// found the function
+					found_table = 1;
+
+					lua_pushvalue(L, -1);
+
+					// replace the top element with placeholder
+					lua_replace(L, stack_size + 1);
+				}
+				lua_pop(L, 1);
+			}
+
+			lua_pop(L, 1); // remove _G
+
+
+			if (!found_table)
+			{
+				return luaL_error(L, "Error: Lua table not found");
+			}
+
+			// check stack size
+			if (lua_gettop(L) != stack_size + 1)
+			{
+				fprintf(stderr, "Error: Stack size not same.\n\tPlease Report this Issue");
+				exit(-1);
+			}
+
+			return 1;
+		}
+		lua_newtable(L);
+		lua_getglobal(L, "PythonClassWrapper");
+		lua_setmetatable(L, -2);
+
+		size_t nbytes = sizeof(PyLua_PyObject);
+		PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_newuserdata(L, nbytes);
+		lua_setfield(L, -2, "__python");
+
+		py_obj->object = pItem;
+
+		return 1;
+	}
 
 	fprintf(stderr, "Error: While converting Python type to Lua type");
 	exit(-1);
@@ -219,6 +290,18 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 	}
 	else if (type == LUA_TTABLE)
 	{
+		PyObject* pReturn;
+
+		// check if table is a wrapper around python object
+		lua_getfield(L, index, "__python");
+		if (lua_type(L, -1) == LUA_TUSERDATA)
+		{
+			PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
+			lua_pop(L, 1);
+			return py_obj->object;
+		}
+		lua_pop(L, 1);
+
 		if (lua_getmetatable(L, index))
 		{
 			// to python instance
@@ -234,7 +317,7 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 			{
 				PyObject* pArgs = Py_BuildValue("(KK)", lStack_prt, lTable_prt);
 
-				PyObject* pReturn = PyObject_CallObject(obj, pArgs);
+				pReturn = PyObject_CallObject(obj, pArgs);
 				if (pReturn)
 				{
 					return pReturn;
@@ -258,7 +341,7 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 			{
 				PyObject* pArgs = Py_BuildValue("(KK)", lStack_prt, lTable_prt);
 
-				PyObject* pReturn = PyObject_CallObject(obj, pArgs);
+				pReturn = PyObject_CallObject(obj, pArgs);
 				if (pReturn)
 				{
 					return pReturn;

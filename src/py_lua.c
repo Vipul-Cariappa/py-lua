@@ -1,22 +1,7 @@
 #include "pylua.h"
 
 
-typedef struct PyLua_LuaFunc {
-	PyObject_HEAD
-	void* lStack_prt;
-	void* lFunc_prt;
-	int is_luathread;
-	int thread_terminated;
-} PyLua_LuaFunc;
-
-typedef struct PyLua_LuaTable {
-	PyObject_HEAD
-	void* lStack_prt;
-	void* lTable_prt;
-} PyLua_LuaTable;
-
-
-static PyTypeObject pLuaInstance_Type;
+PyTypeObject pLuaInstance_Type;
 static PyObject* LuaError;
 
 
@@ -970,7 +955,7 @@ static PyNumberMethods pLuaInstance_NumberMethods = {
 	.nb_invert = bnot_LuaInstance_Wrapper,
 };
 
-static PyTypeObject pLuaInstance_Type = {
+extern PyTypeObject pLuaInstance_Type = {
 	PyVarObject_HEAD_INIT(NULL, 0)
 	.tp_name = "pylua.lua_instance_wrapper",
 	.tp_doc = "pylua.lua_instance_wrapper",
@@ -988,7 +973,7 @@ static PyTypeObject pLuaInstance_Type = {
 	.tp_str = string_LuaInstance_Wrapper,
 };
 
-static PyTypeObject pLuaTable_Type = {
+extern PyTypeObject pLuaTable_Type = {
 	PyVarObject_HEAD_INIT(NULL, 0)
 	.tp_name = "pylua.lua_table_wrapper",
 	.tp_doc = "pylua.lua_table_wrapper",

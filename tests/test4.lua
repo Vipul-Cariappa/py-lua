@@ -128,8 +128,18 @@ function test_call_table_from_python()
     lu.assertEquals(py_module.handle_call(c), "Call:_call function")
 end
 
-function test_classes_python()
+function test_renamethistest()
+    print(py_module.return_me(r1))
+end
+
+function test_classes_lua()
     py_module.test_lua_class(Rectangle)
+end
+
+function test_classes_python()
+    print(py_module.c1 + 2)
+    print(py_module.c1 + py_module.c2)
+    print(py_module.Circle)
 end
 
 -- os.exit(lu.LuaUnit.run())
