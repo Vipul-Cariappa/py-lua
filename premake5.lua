@@ -6,14 +6,11 @@ project "pylua"
    language "C"
    targetdir "bin/%{cfg.buildcfg}"
 
-   includedirs { "src/header", "/usr/include/python3.9", "/usr/include/x86_64-linux-gnu/python3.9", "/usr/include/lua5.4" }
+   includedirs { "src/header", "/path/to/python/header", "/path/to/lua/header" }
    files { "src/**.h", "src/**.c" }
 
    filter { "system:linux" }
-      links { "python3.9", "lua5.4" }
-
-    filter { "system:windows" }
-      links { "python", "lua" }
+      links { "python3.8", "lua5.4" }
 
    filter "configurations:Debug"
       defines { "DEBUG" }
