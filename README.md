@@ -40,7 +40,7 @@ print(pymodule.concatenate("Lua loves ", "Python"))
 ```
 
 ## Building
-To compile py-lua in linux. First install the required dependencies:
+To compile py-lua. First install the required dependencies:
 - python3
 - lua5.4
 - premake5
@@ -54,13 +54,13 @@ Clone the repository
 git clone https://github.com/Vipul-Cariappa/py-lua.git
 ```
 
-Update `premake5.lua`: Replace `/path/to/python/header` and `/path/to/lua/header` with actuall paths.
+Update `premake5.lua` file: Replace `/path/to/python/header` and `/path/to/lua/header` with actual paths.
 
 After updating paths run premake with desired action:
 ```bash 
 premake5 [action]
 ```
-You can use compiler of your choice after running premake to build the pylua shared library.
+You can now use compiler of your choice to build the pylua shared library.
 
 Copy the shared library pylua.so file to the working directory of your project.
 
