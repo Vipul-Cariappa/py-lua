@@ -13,9 +13,10 @@ jobs:
     - uses: leafo/gh-actions-lua@v8.0.0
 
     - name: Install Requirements
-      run: sudo apt install -y gcc
-      run: pkg-config python3-embed --cflags
-      run: pkg-config lua --cflags
+      run: |
+        sudo apt install -y gcc
+        pkg-config python3-embed --cflags
+        pkg-config lua --cflags
     - name: Build
       run: bash build.sh
 
