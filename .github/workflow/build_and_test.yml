@@ -1,0 +1,14 @@
+name: Build and Test
+
+on: [push, pull_request]
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    steps:
+      uses: actions/checkout@master
+      name: Build
+      run: sudo apt-get install -y gcc python3 python3-dev lua5.4 liblua5.4-dev tar wget
+      run: bash build.sh
+      name: Test
+      run: bash test.sh
