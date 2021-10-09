@@ -10,11 +10,10 @@ jobs:
     - uses: actions/setup-python@v2
       with:
         python-version: '3.8'
-    - uses: rlalik/setup-cpp-compiler@v1
-      with:
-        compiler: gcc
     - uses: leafo/gh-actions-lua@v8.0.0
 
+    - name: Install Requirements
+      run: sudo apt install -y gcc
     - name: Build
       run: bash build.sh
 
