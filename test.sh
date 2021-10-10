@@ -26,3 +26,5 @@ lua test2.lua
 
 printf "\nTest Case 4\n"
 lua test3.lua
+
+printf "\n\nFinished Running all tests"
