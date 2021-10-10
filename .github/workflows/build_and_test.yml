@@ -14,9 +14,8 @@ jobs:
 
     - name: Install Requirements
       run: |
-        sudo apt install -y gcc
-        pkg-config python3-embed --cflags
-        pkg-config lua --cflags
+        which python3
+        which lua
     - name: Build
       run: bash build.sh
 
