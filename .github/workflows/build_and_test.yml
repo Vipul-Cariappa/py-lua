@@ -10,7 +10,7 @@ jobs:
     - uses: actions/setup-python@v2
       with:
         python-version: '3.8'
-    - uses: leafo/gh-actions-lua@v8.0.0
+    - uses: Vipul-Cariappa/lua-setup-action@main
 
     - name: Install Requirements
       run: |
