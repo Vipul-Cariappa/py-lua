@@ -16,15 +16,23 @@ fi
 printf "Running Tests\n"
 
 printf "\nTest Case 1\n"
-lua test0.lua
+if ! lua test0.lua; then
+    echo "Error"
+fi
 
 printf "\nTest Case 2\n"
-lua test1.lua
+if ! lua test1.lua; then
+    exit -1
+fi
 
 printf "\nTest Case 3\n"
-lua test2.lua
+if ! lua test2.lua; then
+    exit -1
+fi
 
 printf "\nTest Case 4\n"
-lua test3.lua
+if ! lua test3.lua; then
+    exit -1
+fi
 
-printf "\n\nFinished Running all tests"
+printf "\n\nFinished Running all tests\n"
