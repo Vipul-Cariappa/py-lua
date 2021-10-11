@@ -236,8 +236,32 @@ static int add_pythonobj_wrapper(lua_State* L)
 
 	PyObject* other = PyLua_LuaToPython(L, 2);
 	PyObject* pReturn = PyNumber_Add(py_obj->object, other);
+	if (pReturn)
+	{
+		return PyLua_PythonToLua(L, pReturn);
+	}
+	
+	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+}
 
-	return PyLua_PythonToLua(L, pReturn);
+
+static int get_pythonobj_wrapper(lua_State* L)
+{
+	lua_getfield(L, 1, "__python");
+	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
+	lua_pop(L, 1); // remove userdata
+
+	// attribute to string
+	const char* attr = lua_tostring(L, 2);
+
+	PyObject* other = PyLua_LuaToPython(L, 2);
+	PyObject* pReturn = PyObject_GetAttrString(py_obj->object, attr);
+	if (pReturn)
+	{
+		return PyLua_PythonToLua(L, pReturn);
+	}
+
+	return raise_error(L, "Error: Occurred when getting Python Object attribute");
 }
 
 
@@ -376,6 +400,7 @@ static const struct luaL_Reg PY_lib[] = {
 
 static const struct luaL_Reg PY_Call_Wrapper[] = {
 	{"__add", add_pythonobj_wrapper},
+	{"__index", get_pythonobj_wrapper},
 	{NULL, NULL}
 };
 

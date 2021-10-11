@@ -129,7 +129,10 @@ function test_call_table_from_python()
 end
 
 function test_renamethistest()
-    print(py_module.return_me(r1))
+    lu.assertEquals(
+        tostring(py_module.return_me(r1)), 
+        "Rectangle(length = 1, Breadth = 2)"
+    )
 end
 
 function test_classes_lua()
@@ -137,6 +140,7 @@ function test_classes_lua()
 end
 
 function test_classes_python()
+    print(py_module.c1.radius)
     print(py_module.c1 + 2)
     print(py_module.c1 + py_module.c2)
     print(py_module.Circle)
