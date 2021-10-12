@@ -43,5 +43,4 @@ function test_py_coroutine2()
 end
 
 
--- os.exit(lu.LuaUnit.run())
-lu.LuaUnit.run()
+os.exit(lu.LuaUnit.run())

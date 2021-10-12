@@ -1,0 +1,23 @@
+name: Build and Test
+
+on: [push]
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.8'
+    - uses: Vipul-Cariappa/lua-setup-action@main
+
+    - name: Install Requirements
+      run: |
+        which python3
+        which lua
+    - name: Build
+      run: bash build.sh
+
+    - name: Test
+      run: bash test.sh
