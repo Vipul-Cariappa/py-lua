@@ -72,7 +72,7 @@ static int raise_error(lua_State* L, const char* msg)
 			{
 				LUA_MEMORY_ERROR(L);
 			}
-			
+
 			if (snprintf(err_msg, err_max, "%s", traceback_msg) < 0)
 			{
 				err_max *= 4;
@@ -240,7 +240,7 @@ static int add_pythonobj_wrapper(lua_State* L)
 	{
 		return PyLua_PythonToLua(L, pReturn);
 	}
-	
+
 	return raise_error(L, "Error: Occurred when getting Python Object attribute");
 }
 
@@ -711,7 +711,7 @@ int luaopen_pylua(lua_State* L) {
 	lua_setmetatable(L, -2);
 
 	lua_setglobal(L, "Python");
-	
+
 	luaL_newlib(L, PY_Call_Wrapper);
 	lua_setglobal(L, "PythonClassWrapper");
 

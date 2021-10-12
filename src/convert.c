@@ -55,7 +55,7 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
 
 		return 1;
 	}
-	else if (PyFunction_Check(pItem))
+	else if (PyFunction_Check(pItem) || PyMethod_Check(pItem))
 	{
 		// creating new lua function
 		size_t nbytes = sizeof(PyLua_PyFunc);
@@ -177,6 +177,12 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
 
 		lua_pushcclosure(n, iter_PyGenerator, 1);
 
+		return 1;
+	}
+	else if (0)
+	{
+		printf("Good News\n!");
+		lua_pushnil(L);
 		return 1;
 	}
 	else
