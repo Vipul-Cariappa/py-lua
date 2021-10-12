@@ -140,10 +140,30 @@ function test_classes_lua()
 end
 
 function test_classes_python()
-    print(py_module.c1.radius)
-    print(py_module.c1 + 2)
-    print(py_module.c1 + py_module.c2)
-    print(py_module.Circle)
+--     print(py_module.c1.radius)
+--     print(py_module.c1 + 2)
+--     print(py_module.c1 + py_module.c2)
+--     print(py_module.Circle)
+end
+
+function test_python_operations()
+    local tmp = py_module.c1 + py_module.c2
+    lu.assertEquals(tmp.radius, 3)
+    
+    tmp = py_module.c1 - py_module.c2
+    lu.assertEquals(tmp.radius, -1)
+    
+    tmp = py_module.c1 * 5
+    lu.assertEquals(tmp.radius, 5)
+        
+    tmp = py_module.c2 ~= py_module.c1
+    lu.assertEquals(tmp, true)
+    
+    tmp = py_module.c2 == py_module.c1
+    lu.assertEquals(tmp, false)
+    
+    tmp = py_module.c2 < py_module.c1
+    lu.assertEquals(tmp, false)
 end
 
 -- os.exit(lu.LuaUnit.run())

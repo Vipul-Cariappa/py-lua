@@ -244,6 +244,275 @@ static int add_pythonobj_wrapper(lua_State* L)
 	return raise_error(L, "Error: Occurred when getting Python Object attribute");
 }
 
+static int sub_pythonobj_wrapper(lua_State* L)
+{
+	lua_getfield(L, 1, "__python");
+	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
+	lua_pop(L, 1); // remove userdata
+
+	PyObject* other = PyLua_LuaToPython(L, 2);
+	PyObject* pReturn = PyNumber_Subtract(py_obj->object, other);
+	if (pReturn)
+	{
+		return PyLua_PythonToLua(L, pReturn);
+	}
+
+	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+}
+
+static int mul_pythonobj_wrapper(lua_State* L)
+{
+	lua_getfield(L, 1, "__python");
+	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
+	lua_pop(L, 1); // remove userdata
+
+	PyObject* other = PyLua_LuaToPython(L, 2);
+	PyObject* pReturn = PyNumber_Multiply(py_obj->object, other);
+	if (pReturn)
+	{
+		return PyLua_PythonToLua(L, pReturn);
+	}
+
+	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+}
+
+static int div_pythonobj_wrapper(lua_State* L)
+{
+	lua_getfield(L, 1, "__python");
+	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
+	lua_pop(L, 1); // remove userdata
+
+	PyObject* other = PyLua_LuaToPython(L, 2);
+	PyObject* pReturn = PyNumber_TrueDivide(py_obj->object, other);
+	if (pReturn)
+	{
+		return PyLua_PythonToLua(L, pReturn);
+	}
+
+	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+}
+
+static int floordiv_pythonobj_wrapper(lua_State* L)
+{
+	lua_getfield(L, 1, "__python");
+	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
+	lua_pop(L, 1); // remove userdata
+
+	PyObject* other = PyLua_LuaToPython(L, 2);
+	PyObject* pReturn = PyNumber_FloorDivide(py_obj->object, other);
+	if (pReturn)
+	{
+		return PyLua_PythonToLua(L, pReturn);
+	}
+
+	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+}
+
+static int pow_pythonobj_wrapper(lua_State* L)
+{
+	lua_getfield(L, 1, "__python");
+	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
+	lua_pop(L, 1); // remove userdata
+
+	PyObject* other = PyLua_LuaToPython(L, 2);
+	PyObject* pReturn = PyNumber_Power(py_obj->object, other, Py_None);
+	if (pReturn)
+	{
+		return PyLua_PythonToLua(L, pReturn);
+	}
+
+	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+}
+
+static int mod_pythonobj_wrapper(lua_State* L)
+{
+	lua_getfield(L, 1, "__python");
+	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
+	lua_pop(L, 1); // remove userdata
+
+	PyObject* other = PyLua_LuaToPython(L, 2);
+	PyObject* pReturn = PyNumber_Remainder(py_obj->object, other);
+	if (pReturn)
+	{
+		return PyLua_PythonToLua(L, pReturn);
+	}
+
+	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+}
+
+static int lshift_pythonobj_wrapper(lua_State* L)
+{
+	lua_getfield(L, 1, "__python");
+	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
+	lua_pop(L, 1); // remove userdata
+
+	PyObject* other = PyLua_LuaToPython(L, 2);
+	PyObject* pReturn = PyNumber_Lshift(py_obj->object, other);
+	if (pReturn)
+	{
+		return PyLua_PythonToLua(L, pReturn);
+	}
+
+	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+}
+
+static int rshift_pythonobj_wrapper(lua_State* L)
+{
+	lua_getfield(L, 1, "__python");
+	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
+	lua_pop(L, 1); // remove userdata
+
+	PyObject* other = PyLua_LuaToPython(L, 2);
+	PyObject* pReturn = PyNumber_Rshift(py_obj->object, other);
+	if (pReturn)
+	{
+		return PyLua_PythonToLua(L, pReturn);
+	}
+
+	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+}
+
+static int band_pythonobj_wrapper(lua_State* L)
+{
+	lua_getfield(L, 1, "__python");
+	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
+	lua_pop(L, 1); // remove userdata
+
+	PyObject* other = PyLua_LuaToPython(L, 2);
+	PyObject* pReturn = PyNumber_And(py_obj->object, other);
+	if (pReturn)
+	{
+		return PyLua_PythonToLua(L, pReturn);
+	}
+
+	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+}
+
+static int bor_pythonobj_wrapper(lua_State* L)
+{
+	lua_getfield(L, 1, "__python");
+	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
+	lua_pop(L, 1); // remove userdata
+
+	PyObject* other = PyLua_LuaToPython(L, 2);
+	PyObject* pReturn = PyNumber_Or(py_obj->object, other);
+	if (pReturn)
+	{
+		return PyLua_PythonToLua(L, pReturn);
+	}
+
+	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+}
+
+static int bxor_pythonobj_wrapper(lua_State* L)
+{
+	lua_getfield(L, 1, "__python");
+	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
+	lua_pop(L, 1); // remove userdata
+
+	PyObject* other = PyLua_LuaToPython(L, 2);
+	PyObject* pReturn = PyNumber_Xor(py_obj->object, other);
+	if (pReturn)
+	{
+		return PyLua_PythonToLua(L, pReturn);
+	}
+
+	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+}
+
+static int eq_pythonobj_wrapper(lua_State* L)
+{
+	lua_getfield(L, 1, "__python");
+	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
+	lua_pop(L, 1); // remove userdata
+
+	PyObject* other = PyLua_LuaToPython(L, 2);
+	PyObject* pReturn = PyObject_RichCompare(py_obj->object, other, 2);
+	if (pReturn)
+	{
+		return PyLua_PythonToLua(L, pReturn);
+	}
+
+	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+}
+
+static int lt_pythonobj_wrapper(lua_State* L)
+{
+	lua_getfield(L, 1, "__python");
+	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
+	lua_pop(L, 1); // remove userdata
+
+	PyObject* other = PyLua_LuaToPython(L, 2);
+	PyObject* pReturn = PyObject_RichCompare(py_obj->object, other, 0);
+	if (pReturn)
+	{
+		return PyLua_PythonToLua(L, pReturn);
+	}
+
+	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+}
+
+static int le_pythonobj_wrapper(lua_State* L)
+{
+	lua_getfield(L, 1, "__python");
+	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
+	lua_pop(L, 1); // remove userdata
+
+	PyObject* other = PyLua_LuaToPython(L, 2);
+	PyObject* pReturn = PyObject_RichCompare(py_obj->object, other, 1);
+	if (pReturn)
+	{
+		return PyLua_PythonToLua(L, pReturn);
+	}
+
+	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+}
+
+static int len_pythonobj_wrapper(lua_State* L)
+{
+	lua_getfield(L, 1, "__python");
+	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
+	lua_pop(L, 1); // remove userdata
+
+	PyObject* pReturn = PyObject_Size(py_obj->object);
+	if (pReturn)
+	{
+		return PyLua_PythonToLua(L, pReturn);
+	}
+
+	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+}
+
+static int neg_pythonobj_wrapper(lua_State* L)
+{
+	lua_getfield(L, 1, "__python");
+	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
+	lua_pop(L, 1); // remove userdata
+
+	PyObject* pReturn = PyNumber_Negative(py_obj->object);
+	if (pReturn)
+	{
+		return PyLua_PythonToLua(L, pReturn);
+	}
+
+	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+}
+
+static int bnot_pythonobj_wrapper(lua_State* L)
+{
+	lua_getfield(L, 1, "__python");
+	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
+	lua_pop(L, 1); // remove userdata
+
+	PyObject* pReturn = PyNumber_Invert(py_obj->object);
+	if (pReturn)
+	{
+		return PyLua_PythonToLua(L, pReturn);
+	}
+
+	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+}
+
 
 static int get_pythonobj_wrapper(lua_State* L)
 {
@@ -400,6 +669,23 @@ static const struct luaL_Reg PY_lib[] = {
 
 static const struct luaL_Reg PY_Call_Wrapper[] = {
 	{"__add", add_pythonobj_wrapper},
+	{"__sub", sub_pythonobj_wrapper},
+	{"__mul", mul_pythonobj_wrapper},
+	{"__div", div_pythonobj_wrapper},
+	{"__idiv", floordiv_pythonobj_wrapper},
+	{"__mod", mod_pythonobj_wrapper},
+	{"__pow", pow_pythonobj_wrapper},
+	{"__band", band_pythonobj_wrapper},
+	{"__bor", bor_pythonobj_wrapper},
+	{"__bxor", bxor_pythonobj_wrapper},
+	{"__shl", lshift_pythonobj_wrapper},
+	{"__shr", rshift_pythonobj_wrapper},
+	{"__eq", eq_pythonobj_wrapper},
+	{"__lt", lt_pythonobj_wrapper},
+	{"__le", le_pythonobj_wrapper},
+	{"__len", len_pythonobj_wrapper},
+	{"__unm", neg_pythonobj_wrapper},
+	{"__bnot", bnot_pythonobj_wrapper},
 	{"__index", get_pythonobj_wrapper},
 	{NULL, NULL}
 };
