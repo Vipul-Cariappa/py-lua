@@ -73,7 +73,7 @@ static int raise_error(lua_State* L, const char* msg)
 				LUA_MEMORY_ERROR(L);
 			}
 			
-			if (strncat(err_msg, err_max, traceback_msg))
+			if (snprintf(err_msg, err_max, "%s", traceback_msg) < 0)
 			{
 				err_max *= 4;
 				char* tmp = realloc(err_msg, err_max);
@@ -87,7 +87,7 @@ static int raise_error(lua_State* L, const char* msg)
 					LUA_MEMORY_ERROR(L);
 				}
 
-				if (strncat(err_msg, err_max, traceback_msg))
+				if (snprintf(err_msg, err_max, "%s", traceback_msg) < 0)
 				{
 					LUA_MEMORY_ERROR(L);
 				}
@@ -116,7 +116,7 @@ static int raise_error(lua_State* L, const char* msg)
 		LUA_MEMORY_ERROR(L);
 	}
 
-	if (strncat(err_msg, err_max, err_name))
+	if (snprintf(err_msg, err_max, "%s", err_name) < 0)
 	{
 		err_max *= 2;
 		char* tmp = realloc(err_msg, err_max);
@@ -135,7 +135,7 @@ static int raise_error(lua_State* L, const char* msg)
 			LUA_MEMORY_ERROR(L);
 		}
 
-		if (strncat(err_msg, err_max, err_name))
+		if (snprintf(err_msg, err_max, "%s", err_name) < 0)
 		{
 			LUA_MEMORY_ERROR(L);
 		}
