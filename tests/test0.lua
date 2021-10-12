@@ -98,5 +98,4 @@ function test_get_called()
     py_module.get_called(error_out)
 end
 
--- os.exit(lu.LuaUnit.run())
-lu.LuaUnit.run()
+os.exit(lu.LuaUnit.run())

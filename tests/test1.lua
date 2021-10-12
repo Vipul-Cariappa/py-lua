@@ -14,5 +14,4 @@ function test_errors()
     lu.assertError(error_out)
 end
 
--- os.exit(lu.LuaUnit.run())
-lu.LuaUnit.run()
+os.exit(lu.LuaUnit.run())

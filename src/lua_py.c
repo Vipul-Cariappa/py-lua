@@ -38,7 +38,7 @@ static int raise_error(lua_State* L, const char* msg)
 		LUA_MEMORY_ERROR(L);
 	}
 
-	if (sprintf_s(err_msg, err_max, "%s\n\nPython Traceback:\n", msg) < 0)
+	if (snprintf(err_msg, err_max, "%s\n\nPython Traceback:\n", msg) < 0)
 	{
 		LUA_MEMORY_ERROR(L);
 	}
@@ -68,12 +68,12 @@ static int raise_error(lua_State* L, const char* msg)
 			const char* codeName = PyUnicode_AsUTF8(code->co_name);
 			const char* fileName = PyUnicode_AsUTF8(code->co_filename);
 
-			if (sprintf_s(traceback_msg, TRACEBACK_STR_LEN, "File \"%s\", line %i, in\n  %s\n", fileName, lineNr, codeName) < 0)
+			if (snprintf(traceback_msg, TRACEBACK_STR_LEN, "File \"%s\", line %i, in\n  %s\n", fileName, lineNr, codeName) < 0)
 			{
 				LUA_MEMORY_ERROR(L);
 			}
-
-			if (strcat_s(err_msg, err_max, traceback_msg))
+			
+			if (snprintf(err_msg, err_max, "%s", traceback_msg) < 0)
 			{
 				err_max *= 4;
 				char* tmp = realloc(err_msg, err_max);
@@ -87,7 +87,7 @@ static int raise_error(lua_State* L, const char* msg)
 					LUA_MEMORY_ERROR(L);
 				}
 
-				if (strcat_s(err_msg, err_max, traceback_msg))
+				if (snprintf(err_msg, err_max, "%s", traceback_msg) < 0)
 				{
 					LUA_MEMORY_ERROR(L);
 				}
@@ -111,12 +111,12 @@ static int raise_error(lua_State* L, const char* msg)
 
 	char* new_strExcValue = str_replace(strExcValue, "\\n", "\n");
 
-	if (sprintf_s(err_name, EXCEPTION_STR_LEN, "\n  %s\n", new_strExcValue) < 0)
+	if (snprintf(err_name, EXCEPTION_STR_LEN, "\n  %s\n", new_strExcValue) < 0)
 	{
 		LUA_MEMORY_ERROR(L);
 	}
 
-	if (strcat_s(err_msg, err_max, err_name))
+	if (snprintf(err_msg, err_max, "%s", err_name) < 0)
 	{
 		err_max *= 2;
 		char* tmp = realloc(err_msg, err_max);
@@ -135,7 +135,7 @@ static int raise_error(lua_State* L, const char* msg)
 			LUA_MEMORY_ERROR(L);
 		}
 
-		if (strcat_s(err_msg, err_max, err_name))
+		if (snprintf(err_msg, err_max, "%s", err_name) < 0)
 		{
 			LUA_MEMORY_ERROR(L);
 		}

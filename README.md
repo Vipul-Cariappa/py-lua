@@ -39,18 +39,14 @@ print(pymodule.concatenate("Lua loves ", "Python"))
 -- Lua loves Python
 ```
 
-<!-- ## Building
-To compile py-lua in linux. First install the required dependencies:
-- python3-dev
+## Building
+To compile py-lua. First install the required dependencies:
+- python3
 - lua5.4
-- liblua5.4-dev
-- gcc
+- premake5
+- gcc (linux)
+<!-- - Visual Studio Code (windows) -->
 
-In ubuntu run
-
-```bash
-sudo apt-get install python3-dev lua5.4 liblua5.4-dev gcc -y
-```
 
 Clone the repository
 
@@ -58,17 +54,17 @@ Clone the repository
 git clone https://github.com/Vipul-Cariappa/py-lua.git
 ```
 
-Build using gcc
+Update `premake5.lua` file: Replace `/path/to/python/header` and `/path/to/lua/header` with actual paths.
 
+After updating paths run premake with desired action:
 ```bash 
-cd py-lua/src
-
-gcc -fPIC -shared -o pylua.so convert.c lua_py.c py_lua.c -Iheader $(pkg-config --cflags --libs lua5.4) $(pkg-config --cflags --libs python3)
+premake5 [action]
 ```
+You can now use compiler of your choice to build the pylua shared library.
 
 Copy the shared library pylua.so file to the working directory of your project.
 
-If you face any problems while building please ask for help [here](https://github.com/Vipul-Cariappa/py-lua/discussions/new). -->
+If you face any problems while building please ask for help [here](https://github.com/Vipul-Cariappa/py-lua/discussions/new).
 
 
 ## Yet to Implement
