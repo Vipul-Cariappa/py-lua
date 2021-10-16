@@ -26,8 +26,7 @@
 
 	typedef struct PyLua_LuaFunc {
 		PyObject_HEAD
-		void* lStack_prt;
-		void* lFunc_prt;
+		char* name;
 		int is_luathread;
 		int thread_terminated;
 	} PyLua_LuaFunc;

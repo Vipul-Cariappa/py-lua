@@ -364,14 +364,19 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 	else if (type == LUA_TFUNCTION)
 	{
 		// to python function
-		uintptr_t lStack_prt = L;
-		uintptr_t lFunc_prt = lua_topointer(L, index);
+		char name[40];
+		lua_pushvalue(L, index);
+		lua_pushvalue(L, LUA_REGISTRYINDEX);
+		lua_pushvalue(L, -2);
+		snprintf(name, 40, "pylua: function at %p", lua_topointer(L, -2));
+		lua_setfield(L, -2, name);
+		lua_pop(L, 1);
 
 		PyObject* func = PyObject_GetAttrString(pPylua_Module, "lua_function_wrapper");
 
 		if (func)
 		{
-			PyObject* pArgs = Py_BuildValue("(KKi)", lStack_prt, lFunc_prt, 0);
+			PyObject* pArgs = Py_BuildValue("(si)", name, 0);
 
 			PyObject* pReturn = PyObject_CallObject(func, pArgs);
 			if (pReturn)
@@ -383,19 +388,26 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 		{
 			PyErr_Print();
 		}
+
 		return luaL_error(L, "Error: While executing python function");
+
 	}
 	else if (type == LUA_TTHREAD)
 	{
 		// to python generator
-		uintptr_t lStack_prt = L;
-		uintptr_t lFunc_prt = lua_topointer(L, index);
+		char name[40];
+		lua_pushvalue(L, index);
+		lua_pushvalue(L, LUA_REGISTRYINDEX);
+		lua_pushvalue(L, -2);
+		snprintf(name, 40, "pylua: function at %p", lua_topointer(L, -2));
+		lua_setfield(L, -2, name);
+		lua_pop(L, 1);
 
 		PyObject* func = PyObject_GetAttrString(pPylua_Module, "lua_function_wrapper");
 
 		if (func)
 		{
-			PyObject* pArgs = Py_BuildValue("(KKi)", lStack_prt, lFunc_prt, 1);
+			PyObject* pArgs = Py_BuildValue("(si)", name, 1);
 
 			PyObject* pReturn = PyObject_CallObject(func, pArgs);
 			if (pReturn)

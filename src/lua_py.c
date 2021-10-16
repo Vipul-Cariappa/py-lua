@@ -12,9 +12,11 @@
 // py_lua.c
 PyMODINIT_FUNC PyInit_pylua(void);
 
-
 int PyLua_PyLoadedModuleCount = 0;
 extern PyObject* pPylua_Module;
+
+
+lua_State* cL;
 
 typedef struct PyLua_PyModule {
 	PyObject* module;
@@ -695,6 +697,12 @@ static const struct luaL_Reg PY_Call_Wrapper[] = {
 __declspec(dllexport)
 #endif
 int luaopen_pylua(lua_State* L) {
+
+	lua_pushvalue(L, LUA_REGISTRYINDEX);
+	cL = lua_newthread(L);
+	lua_setfield(L, -2, "pylua thread");
+	lua_pop(L, 1);
+
 	// python module
 	luaL_newlib(L, PY_lib);
 
