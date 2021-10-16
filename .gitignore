@@ -51,10 +51,20 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
+# Visual Studio 2019
+.vs/
+py-lua.sln
+pylua.vcxproj
+pylua.vcxproj.filters
+pylua.vcxproj.user
+
 # Python
 __pycache__/
 
 # User Defined
+_premake5.lua
 tests/pylua.sh
 tests/luaunit.lua
 tmp*
+bin/
+obj/
