@@ -5,6 +5,7 @@
 #include <lauxlib.h>
 #include <lualib.h>
 
+#include <assert.h>
 
 #ifndef pylua
 #define pylua
@@ -26,17 +27,26 @@
 
 	typedef struct PyLua_LuaFunc {
 		PyObject_HEAD
-		char* name;
+		int index;
 		int is_luathread;
 		int thread_terminated;
 	} PyLua_LuaFunc;
 
 	typedef struct PyLua_LuaTable {
 		PyObject_HEAD
-		void* lStack_prt;
-		void* lTable_prt;
+		int index;
 	} PyLua_LuaTable;
 
 	char* str_replace(char* orig, char* rep, char* with);
+
+	// to be removed
+	void iterate_and_print_stack(lua_State* L);
+	void iterate_and_print_table(lua_State* L, int index);
+
+	#define SAVE_STACK_SIZE(L) size_t _ss = lua_gettop((L))
+	#define CHECK_STACK_SIZE(L, inc) assert((_ss + (inc)) == lua_gettop((L)))
+	#define CHECK_STACK_ZERO(L) assert(lua_gettop((L)) == 0)
+
+	// -------------
 
 #endif // !pylua

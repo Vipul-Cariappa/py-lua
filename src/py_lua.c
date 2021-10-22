@@ -7,8 +7,77 @@ static PyObject* LuaError;
 // lua_py.c
 extern lua_State* cL;
 
+
+// to be removed
+void iterate_and_print_stack(lua_State* L)
+{
+	SAVE_STACK_SIZE(L);
+
+	int stack_size = lua_gettop(L);
+
+	for (int i = 1; i <= stack_size; i++)
+	{
+		lua_pushvalue(L, i);
+		const char* value = lua_tostring(L, -1);
+		if (!value)
+		{
+			printf("%i => %p\t Type: %s\n", i, lua_topointer(L, -2), luaL_typename(L, -2));
+		}
+		else
+		{
+			printf("%i => %s\n", i, value);
+		}
+		lua_pop(L, 1);
+	}
+	
+	CHECK_STACK_SIZE(L, 0);
+
+}
+void iterate_and_print_table(lua_State* L, int index)
+{
+	SAVE_STACK_SIZE(L);
+	// Push another reference to the table on top of the stack (so we know
+	// where it is, and this function can work for negative, positive and
+	// pseudo indices
+	lua_pushvalue(L, index);
+	// stack now contains: -1 => table
+	lua_pushnil(L);
+	// stack now contains: -1 => nil; -2 => table
+	while (lua_next(L, -2))
+	{
+		// stack now contains: -1 => value; -2 => key; -3 => table
+		// copy the key so that lua_tostring does not modify the original
+		lua_pushvalue(L, -2);
+		// stack now contains: -1 => key; -2 => value; -3 => key; -4 => table
+		const char* key = lua_tostring(L, -1);
+		const char* value = lua_tostring(L, -2);
+		if (!value)
+		{
+			printf("%s => %p\t Type: %s\n", key, lua_topointer(L, -2), luaL_typename(L, -2));
+		}
+		else
+		{
+			printf("%s => %s\n", key, value);
+		}
+		// pop value + copy of key, leaving original key
+		lua_pop(L, 2);
+		// stack now contains: -1 => key; -2 => table
+	}
+	// stack now contains: -1 => table (when lua_next returns 0 it pops the key
+	// but does not push anything.)
+	// Pop table
+	lua_pop(L, 1);
+	
+	CHECK_STACK_SIZE(L, 0);
+
+}
+// -------------
+
+
 static PyObject* create_return(lua_State* L, int len)
 {
+	SAVE_STACK_SIZE(L);
+
 	PyObject* pReturn = NULL;
 
 	if (len == 0)
@@ -30,6 +99,8 @@ static PyObject* create_return(lua_State* L, int len)
 			PyTuple_SetItem(pReturn, j, PyLua_LuaToPython(L, i));
 		}
 	}
+
+	CHECK_STACK_SIZE(L, 0);
 
 	return pReturn;
 }
@@ -62,12 +133,9 @@ static PyObject* next_LuaCoroutine(PyLua_LuaFunc* self)
 		return NULL;
 	}
 
-	// make sure size of stact is the same at exit
-	int stack_size = lua_gettop(cL);
-
 	// get function
 	lua_pushvalue(cL, LUA_REGISTRYINDEX);
-	lua_getfield(cL, -1, self->name);
+	lua_rawgeti(cL, -1, self->index);
 
 	//number of yield values
 	int yield_count = 0;
@@ -102,11 +170,7 @@ static PyObject* next_LuaCoroutine(PyLua_LuaFunc* self)
 	lua_pop(cL, 2);
 
 	// check stack size
-	if (lua_gettop(cL) != stack_size)
-	{
-		fprintf(stderr, "Error: Stack size not same.\n\tPlease Report this Issue");
-		exit(-1);
-	}
+	CHECK_STACK_ZERO(cL);
 
 	return pReturn;
 }
@@ -149,8 +213,8 @@ static PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwa
 
 	// get function
 	lua_pushvalue(cL, LUA_REGISTRYINDEX);
-	lua_getfield(cL, -1, self->name);
-	
+	lua_rawgeti(cL, -1, self->index);
+
 	// execute function
 	if (lua_pcall(cL, arg_len, LUA_MULTRET, 0) != LUA_OK)
 	{
@@ -160,17 +224,13 @@ static PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwa
 		return NULL;
 	}
 
-	int return_len = lua_gettop(cL) - stack_size + 1 ;
+	int return_len = lua_gettop(cL) - stack_size + 1;
 
 	PyObject* pReturn = create_return(cL, return_len);
 	lua_pop(cL, return_len);
 
 	// check stack size
-	if (lua_gettop(cL) != stack_size)
-	{
-		fprintf(stderr, "Error: Stack size not same.\n\tPlease Report this Issue");
-		exit(-1);
-	}
+	CHECK_STACK_ZERO(cL);
 
 	return pReturn;
 }
@@ -184,158 +244,61 @@ static PyObject* get_LuaFunc_Wrapper(PyLua_LuaFunc* self, PyObject* args, PyObje
 		return NULL;
 	}
 
-	char* name;
+	int index;
 	int is_luathread;
 
-	if (!PyArg_ParseTuple(args, "si", &name, &is_luathread))
+	if (!PyArg_ParseTuple(args, "ii", &index, &is_luathread))
 	{
 		PyErr_SetString(LuaError, "Got wrong arguments to get_LuaFunc_Wrapper");
 		return NULL;
 	}
 
-	self->name = name;
+	self->index = index;
 	self->is_luathread = is_luathread;
 	self->thread_terminated = 0;
+
+	CHECK_STACK_ZERO(cL);
 
 	return 0;
 }
 
-static void stack_operation(lua_State* L, void* self, void* other)
-{
-	// make sure size of stact is +2 or +1 more then now at exit
-	int stack_size = lua_gettop(L);
-
-	// make sure of enough space in stack
-	lua_checkstack(L, 7);
-
-	// error message if table is not found
-	int found_table1 = 0;
-	int found_table2 = 0;
-
-	// place holder for tables
-	lua_pushnil(L);
-	if (other)
-	{
-		lua_pushnil(L);
-	}
-
-	// get list of variables from lua
-	lua_getglobal(L, "_G");
-
-	lua_pushnil(L);
-
-	// iterate over them to find the function
-	while (lua_next(L, -2))
-	{
-
-		if (lua_topointer(L, -1) == self || lua_topointer(L, -1) == other)
-		{
-			// found the function
-			if (found_table1)
-			{
-				found_table2 = 1;
-			}
-			else
-			{
-				found_table1 = 1;
-			}
-
-			lua_pushvalue(L, -1);
-
-			// replace the top element with placeholder
-			if (lua_topointer(L, -1) == self)
-			{
-				lua_replace(L, stack_size + 1);
-			}
-			else
-			{
-				lua_replace(L, stack_size + 2);
-			}
-
-		}
-
-		lua_pop(L, 1);
-	}
-
-	lua_pop(L, 1); // remove _G
-
-
-	if ((other) && (!found_table1 || !found_table2))
-	{
-		//return luaL_error(L, "Error: Lua function not found");
-
-		PyErr_SetString(LuaError, "Lua tables not found");
-		return NULL;
-	}
-	else if (!found_table1)
-	{
-		PyErr_SetString(LuaError, "Lua table not found");
-		return NULL;
-	}
-
-	// check stack size
-	if ((other) && (lua_gettop(L) != stack_size + 2))
-	{
-		fprintf(stderr, "Error: Stack size not same.\n\tPlease Report this Issue");
-		exit(-1);
-	}
-	if ((!other) && lua_gettop(L) != stack_size + 1)
-	{
-		fprintf(stderr, "Error: Stack size not same.\n\tPlease Report this Issue");
-		exit(-1);
-	}
-
-}
 
 static PyObject* operation_LuaTable_base(PyLua_LuaTable* self, PyObject* other, const char* op)
 {
 	PyObject* pReturn;
 
-	lua_State* L = (lua_State*)self->lStack_prt;
-	lua_checkstack(L, 5);
-
 	// stack size matching
-	int stack_size = lua_gettop(L);
+	int stack_size = lua_gettop(cL);
 
-	// placeholder for function
-	lua_pushnil(L);
+	// get table
+	lua_pushvalue(cL, LUA_REGISTRYINDEX);
+	lua_pushnil(cL); // placeholder for function (method)
+	lua_rawgeti(cL, -2, self->index);
 
-	// get the two elements self and other
-	if (PyObject_IsInstance(other, (PyObject*)&pLuaInstance_Type))
+	// get function (method)
+	lua_getfield(cL, -1, op);
+	lua_replace(cL, -3);
+
+	// get other element
+	PyLua_PythonToLua(cL, other);
+
+	//printf("Arg1: %p   Arg2: %p, Op: %s\n", lua_topointer(cL, -2), lua_topointer(cL, -1), op);
+
+	// call function
+	if (lua_pcall(cL, 2, 1, 0) != LUA_OK)
 	{
-		stack_operation(L, self->lTable_prt, ((PyLua_LuaTable*)other)->lTable_prt);
-	}
-	else
-	{
-		stack_operation(L, self->lTable_prt, NULL);
-		PyLua_PythonToLua(L, other);
+		//return luaL_error(L, "Error: While calling the lua function.");
+
+		//TODO: manage stack before raising error
+
+		PyErr_Format(LuaError, "\nError raise while executing lua\nLua Traceback:\n %s\n", lua_tostring(cL, -1));
+		return NULL;
 	}
 
-	// get the function
-	lua_getmetatable(L, -2);
-	lua_getfield(L, -1, op);
-	lua_replace(L, stack_size + 1);
-	lua_pop(L, 1);
+	pReturn = PyLua_LuaToPython(cL, -1);
+	lua_pop(cL, 2);	// result and registry
 
-	if (lua_gettop(L) == stack_size + 3)
-	{
-		if (lua_pcall(L, 2, 1, 0) != LUA_OK)
-		{
-			//return luaL_error(L, "Error: While calling the lua function.");
-
-			PyErr_Format(LuaError, "\nError raise while executing lua\nLua Traceback:\n %s\n", lua_tostring(L, -1));
-			return NULL;
-		}
-
-		pReturn = PyLua_LuaToPython(L, -1);
-		lua_pop(L, 1);
-	}
-	else
-	{
-		// raise internal error
-		fprintf(stderr, "Error: Stack size not same.\n\tPlease Report this Issue");
-		exit(-1);
-	}
+	CHECK_STACK_ZERO(cL);
 
 	return pReturn;
 }
@@ -360,26 +323,17 @@ static PyObject* getelem_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* pKey)
 		}
 	}
 
-	lua_State* L = (lua_State*)self->lStack_prt;
-
-	// stack size matching
-	int stack_size = lua_gettop(L);
-
-	// get the two elements self and other
-	stack_operation(L, self->lTable_prt, NULL);
+	// get table
+	lua_pushvalue(cL, LUA_REGISTRYINDEX);
+	lua_rawgeti(cL, -2, self->index);
 
 	// get item
-	lua_getfield(L, -1, key_str);
-	pReturn = PyLua_LuaToPython(L, -1);
+	lua_getfield(cL, -1, key_str);
+	pReturn = PyLua_LuaToPython(cL, -1);
 
-	lua_pop(L, 2);
+	lua_pop(cL, 3);
 
-	if (stack_size != lua_gettop(L))
-	{
-		// raise internal error
-		fprintf(stderr, "Error: Stack size not same.\n\tPlease Report this Issue");
-		exit(-1);
-	}
+	CHECK_STACK_ZERO(cL);
 
 	Py_DECREF(pStr);
 	Py_DECREF(encodedString);
@@ -388,8 +342,7 @@ static PyObject* getelem_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* pKey)
 
 static int setelem_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* pKey, PyObject* pValue)
 {
-	lua_State* L = (lua_State*)self->lStack_prt;
-
+	// to string
 	PyObject* pStr = PyObject_Str(pKey);
 	PyObject* encodedString = PyUnicode_AsEncodedString(pKey, "UTF-8", "strict");
 	const char* key_str = NULL;
@@ -401,103 +354,72 @@ static int setelem_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* pKey, PyObje
 		if (!key_str)
 		{
 			// raise error
-			return NULL;
+			return -1;
 		}
 	}
 
-	// stack size matching
-	int stack_size = lua_gettop(L);
+	// get table
+	lua_pushvalue(cL, LUA_REGISTRYINDEX);
+	lua_rawgeti(cL, -2, self->index);
 
-	// get the two elements self and other
-	stack_operation(L, self->lTable_prt, NULL);
-
-	if (!key_str)
+	// set value
+	// handle del
+	if (!pValue)
 	{
-		// delete the value at the given key
-		lua_pushnil(L);
-		lua_setfield(L, -2, key_str);
-
-		Py_DECREF(pStr);
-		Py_DECREF(encodedString);
-		return 0;
+		lua_pushnil(cL);
+		lua_setfield(cL, -2, key_str);
 	}
 
-	// set attr
-	PyLua_PythonToLua(L, pValue);
-	lua_setfield(L, -2, key_str);
+	PyLua_PythonToLua(cL, pValue);
+	lua_setfield(cL, -2, key_str);
 
-	lua_pop(L, 1);
-
-	if (stack_size != lua_gettop(L))
-	{
-		// raise internal error
-		fprintf(stderr, "Error: Stack size not same.\n\tPlease Report this Issue");
-		exit(-1);
-	}
+	lua_pop(cL, 2);
 
 	Py_DECREF(pStr);
 	Py_DECREF(encodedString);
+	
+	CHECK_STACK_ZERO(cL);
+	
 	return 0;
 }
 
 static PyObject* getattr_LuaInstance_Wrapper(PyLua_LuaTable* self, char* attr)
 {
-	PyObject* pReturn = NULL;
-
-	lua_State* L = (lua_State*)self->lStack_prt;
-
-	// stack size matching
-	int stack_size = lua_gettop(L);
-
-	// get the two elements self and other
-	stack_operation(L, self->lTable_prt, NULL);
+	// get table
+	lua_pushvalue(cL, LUA_REGISTRYINDEX);
+	lua_rawgeti(cL, -1, self->index);
 
 	// get item
-	lua_getfield(L, -1, attr);
-	pReturn = PyLua_LuaToPython(L, -1);
+	lua_getfield(cL, -1, attr);
+	PyObject* pReturn = PyLua_LuaToPython(cL, -1);
 
-	lua_pop(L, 2);
+	lua_pop(cL, 3);
 
-	if (stack_size != lua_gettop(L))
-	{
-		// raise internal error
-		fprintf(stderr, "Error: Stack size not same.\n\tPlease Report this Issue");
-		exit(-1);
-	}
+	CHECK_STACK_ZERO(cL);
 
 	return pReturn;
 }
 
-static int setattr_LuaInstance_Wrapper(PyLua_LuaTable* self, char* attr, PyObject* value)
+static int setattr_LuaInstance_Wrapper(PyLua_LuaTable* self, char* attr, PyObject* pValue)
 {
-	lua_State* L = (lua_State*)self->lStack_prt;
+	// get table
+	lua_pushvalue(cL, LUA_REGISTRYINDEX);
+	lua_rawgeti(cL, -2, self->index);
 
-	// stack size matching
-	int stack_size = lua_gettop(L);
-
-	// get the two elements self and other
-	stack_operation(L, self->lTable_prt, NULL);
-
-	if (!value)
+	// set value
+	// handle del
+	if (!pValue)
 	{
-		// delete the value at the given attr
-		lua_pushnil(L);
-		lua_setfield(L, -2, attr);
-		return 0;
+		lua_pushnil(cL);
+		lua_setfield(cL, -2, attr);
 	}
 
-	// set attr
-	PyLua_PythonToLua(L, value);
-	lua_setfield(L, -2, attr);
+	PyLua_PythonToLua(cL, pValue);
+	lua_setfield(cL, -2, attr);
 
-	lua_pop(L, 1);
+	lua_pop(cL, 2);
 
-	if (stack_size != lua_gettop(L))
-	{
-		// raise internal error
-		fprintf(stderr, "Error: Stack size not same.\n\tPlease Report this Issue");
-		exit(-1);
-	}
+	CHECK_STACK_ZERO(cL);
 
 	return 0;
 }
@@ -513,109 +435,48 @@ static PyObject* call_LuaInstance_Wrapper(PyLua_LuaTable* self, PyObject* args, 
 
 	PyObject* pReturn;
 
-	lua_State* L = (lua_State*)self->lStack_prt;
-	lua_checkstack(L, 5);
+	// get table
+	lua_pushvalue(cL, LUA_REGISTRYINDEX);
+	lua_pushnil(cL); // placeholder for function (method)
+	lua_rawgeti(cL, -2, self->index);
 
-	// stack size matching
-	int stack_size = lua_gettop(L);
+	// get initialiser
+	lua_getfield(cL, -1, "__call");
+	lua_replace(cL, -3);
 
-	// placeholder for call function
-	lua_pushnil(L);
-
-	// get self & function
-	stack_operation(L, self->lTable_prt, NULL);
-	lua_getmetatable(L, -1);
-	lua_getfield(L, -1, "__call");
-	lua_replace(L, stack_size + 1);
-	lua_pop(L, 1);
-
+	// python args to lua
 	Py_ssize_t arg_len = PyTuple_Size(args);
 
-	// python to lua
 	for (int i = 0; i < arg_len; i++)
 	{
-		PyLua_PythonToLua(L, PyTuple_GetItem(args, i));
+		PyLua_PythonToLua(cL, PyTuple_GetItem(args, i));
 	}
 
-	// call the function
-	if (lua_pcall(L, arg_len + 1, LUA_MULTRET, 0) != LUA_OK)
+	// call function
+	if (lua_pcall(cL, arg_len + 1, 1, 0) != LUA_OK)
 	{
 		//return luaL_error(L, "Error: While calling the lua function.");
 
-		PyErr_Format(LuaError, "\nError raise while executing lua\nLua Traceback:\n %s\n", lua_tostring(L, -1));
+		PyErr_Format(LuaError, "\nError raise while executing lua\nLua Traceback:\n %s\n", lua_tostring(cL, -1));
 		return NULL;
 	}
 
-	int return_len = lua_gettop(L) - stack_size;
+	pReturn = PyLua_LuaToPython(cL, -1);
+	lua_pop(cL, 2); // result and registry
 
-	pReturn = create_return(L, return_len);
-	lua_pop(L, return_len);
-
-	// check stack size
-	if (lua_gettop(L) != stack_size)
-	{
-		fprintf(stderr, "Error: Stack size not same.\n\tPlease Report this Issue");
-		exit(-1);
-	}
+	CHECK_STACK_ZERO(cL);
 
 	return pReturn;
 }
 
+static PyObject* concat_LuaInstance_Wrapper(PyLua_LuaTable* self, PyObject* other)
+{
+	return operation_LuaTable_base(self, other, "__concat");
+}
+
 static PyObject* add_LuaInstance_Wrapper(PyLua_LuaTable* self, PyObject* other)
 {
-	PyObject* pReturn;
-
-	lua_State* L = (lua_State*)self->lStack_prt;
-	lua_checkstack(L, 5);
-
-	// stack size matching
-	int stack_size = lua_gettop(L);
-
-	// placeholder for function
-	lua_pushnil(L);
-
-	// get the two elements self and other
-	if (PyObject_IsInstance(other, (PyObject*)&pLuaInstance_Type))
-	{
-		stack_operation(L, self->lTable_prt, ((PyLua_LuaTable*)other)->lTable_prt);
-	}
-	else
-	{
-		stack_operation(L, self->lTable_prt, NULL);
-		PyLua_PythonToLua(L, other);
-	}
-
-	// get the function
-	lua_getmetatable(L, -2);
-	if (lua_getfield(L, -1, "__add") != LUA_TFUNCTION)
-	{
-		lua_pop(L, 1);
-		lua_getfield(L, -1, "__concat");
-	}
-	lua_replace(L, stack_size + 1);
-	lua_pop(L, 1);
-
-	if (lua_gettop(L) == stack_size + 3)
-	{
-		if (lua_pcall(L, 2, 1, 0) != LUA_OK)
-		{
-			//return luaL_error(L, "Error: While calling the lua function.");
-
-			PyErr_Format(LuaError, "\nError raise while executing lua\nLua Traceback:\n %s\n", lua_tostring(L, -1));
-			return NULL;
-		}
-
-		pReturn = PyLua_LuaToPython(L, -1);
-		lua_pop(L, 1);
-	}
-	else
-	{
-		// raise internal error
-		fprintf(stderr, "Error: Stack size not same.\n\tPlease Report this Issue");
-		exit(-1);
-	}
-
-	return pReturn;
+	return operation_LuaTable_base(self, other, "__add");
 }
 
 static PyObject* sub_LuaInstance_Wrapper(PyLua_LuaTable* self, PyObject* other)
@@ -711,6 +572,8 @@ static PyObject* compare_LuaInstance_Wrapper(PyLua_LuaTable* self, PyObject* oth
 		break;
 	}
 
+	CHECK_STACK_ZERO(cL);
+
 	return pReturn;
 }
 
@@ -758,51 +621,40 @@ static PyObject* call_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* args, PyO
 {
 	PyObject* pReturn;
 
-	lua_State* L = self->lStack_prt;
-
-	lua_checkstack(L, 5);
-
 	// stack size matching
-	int stack_size = lua_gettop(L);
-
-	// placeholder for function
-	lua_pushnil(L);
+	int stack_size = lua_gettop(cL);
 
 	// get table
-	stack_operation(L, self->lTable_prt, NULL);
+	lua_pushvalue(cL, LUA_REGISTRYINDEX);
+	lua_pushnil(cL); // placeholder for function (method)
+	lua_rawgeti(cL, -2, self->index);
 
-	// get the function
-	lua_getfield(L, -1, "new"); // make this dynamic from kwargs
-	lua_replace(L, stack_size + 1);
+	// get initialiser
+	lua_getfield(cL, -1, "new");
+	lua_replace(cL, stack_size + 2);
 
 
-	if (lua_gettop(L) == stack_size + 2)
+	// python args to lua
+	Py_ssize_t arg_len = PyTuple_Size(args);
+
+	for (int i = 0; i < arg_len; i++)
 	{
-		// python args to lua
-		Py_ssize_t arg_len = PyTuple_Size(args);
-
-		for (int i = 0; i < arg_len; i++)
-		{
-			PyLua_PythonToLua(L, PyTuple_GetItem(args, i));
-		}
-
-		if (lua_pcall(L, arg_len + 1, 1, 0) != LUA_OK)
-		{
-			//return luaL_error(L, "Error: While calling the lua function.");
-
-			PyErr_Format(LuaError, "\nError raise while executing lua\nLua Traceback:\n %s\n", lua_tostring(L, -1));
-			return NULL;
-		}
-
-		pReturn = PyLua_LuaToPython(L, -1);
-		lua_pop(L, 1);
+		PyLua_PythonToLua(cL, PyTuple_GetItem(args, i));
 	}
-	else
+
+	// call function
+	if (lua_pcall(cL, arg_len + 1, 1, 0) != LUA_OK)
 	{
-		// raise internal error
-		fprintf(stderr, "Error: Stack size not same.\n\tPlease Report this Issue");
-		exit(-1);
+		//return luaL_error(L, "Error: While calling the lua function.");
+
+		PyErr_Format(LuaError, "\nError raise while executing lua\nLua Traceback:\n %s\n", lua_tostring(cL, -1));
+		return NULL;
 	}
+
+	pReturn = PyLua_LuaToPython(cL, -1);
+	lua_pop(cL, 2); // result and registry
+
+	CHECK_STACK_ZERO(cL);
 
 	return pReturn;
 }
@@ -816,17 +668,14 @@ static PyObject* get_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* args, PyOb
 		return NULL;
 	}
 
-	uintptr_t a;
-	uintptr_t b;
-
-	if (!PyArg_ParseTuple(args, "KK", &a, &b))
+	int index;
+	if (!PyArg_ParseTuple(args, "i", &index))
 	{
 		PyErr_SetString(LuaError, "Got wrong arguments to get_LuaFunc_Wrapper");
 		return NULL;
 	}
 
-	self->lStack_prt = a;
-	self->lTable_prt = b;
+	self->index = index;
 
 	return 0;
 }
@@ -838,38 +687,39 @@ static PyTypeObject pLuaFunc_Type = {
 	.tp_basicsize = sizeof(PyLua_LuaFunc),
 	.tp_itemsize = 0,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
-	.tp_new = PyType_GenericNew,
-	.tp_init = get_LuaFunc_Wrapper,
-	.tp_call = call_LuaFunc,
-	.tp_iter = iter_LuaCoroutine,
-	.tp_iternext = next_LuaCoroutine
+	.tp_new = &PyType_GenericNew,
+	.tp_init = &get_LuaFunc_Wrapper,
+	.tp_call = &call_LuaFunc,
+	.tp_iter = &iter_LuaCoroutine,
+	.tp_iternext = &next_LuaCoroutine
 };
 
 static PyMappingMethods pLuaInstance_MappingMethods = {
-	.mp_length = len_LuaInstance_Wrapper,
+	.mp_length = &len_LuaInstance_Wrapper,
 };
 
 static PyMappingMethods pLuaTable_MappingMethods = {
-	.mp_length = len_LuaInstance_Wrapper,
-	.mp_subscript = getelem_LuaTable_Wrapper,
-	.mp_ass_subscript = setelem_LuaTable_Wrapper,
+	.mp_length = &len_LuaInstance_Wrapper,
+	.mp_subscript = &getelem_LuaTable_Wrapper,
+	.mp_ass_subscript = &setelem_LuaTable_Wrapper,
 };
 
 static PyNumberMethods pLuaInstance_NumberMethods = {
-	.nb_add = add_LuaInstance_Wrapper,
-	.nb_subtract = sub_LuaInstance_Wrapper,
-	.nb_multiply = mul_LuaInstance_Wrapper,
-	.nb_true_divide = div_LuaInstance_Wrapper,
-	.nb_floor_divide = floordiv_LuaInstance_Wrapper,
-	.nb_power = pow_LuaInstance_Wrapper,
-	.nb_remainder = mod_LuaInstance_Wrapper,
-	.nb_negative = neg_LuaInstance_Wrapper,
-	.nb_lshift = lshift_LuaInstance_Wrapper,
-	.nb_rshift = rshift_LuaInstance_Wrapper,
-	.nb_and = band_LuaInstance_Wrapper,
-	.nb_or = bor_LuaInstance_Wrapper,
-	.nb_xor = bxor_LuaInstance_Wrapper,
-	.nb_invert = bnot_LuaInstance_Wrapper,
+	.nb_add = &add_LuaInstance_Wrapper,
+	.nb_subtract = &sub_LuaInstance_Wrapper,
+	.nb_multiply = &mul_LuaInstance_Wrapper,
+	.nb_true_divide = &div_LuaInstance_Wrapper,
+	.nb_floor_divide = &floordiv_LuaInstance_Wrapper,
+	.nb_power = &pow_LuaInstance_Wrapper,
+	.nb_remainder = &mod_LuaInstance_Wrapper,
+	.nb_negative = &neg_LuaInstance_Wrapper,
+	.nb_lshift = &lshift_LuaInstance_Wrapper,
+	.nb_rshift = &rshift_LuaInstance_Wrapper,
+	.nb_and = &band_LuaInstance_Wrapper,
+	.nb_or = &bor_LuaInstance_Wrapper,
+	.nb_xor = &bxor_LuaInstance_Wrapper,
+	.nb_invert = &bnot_LuaInstance_Wrapper,
+	.nb_matrix_multiply = &concat_LuaInstance_Wrapper,
 };
 
 extern PyTypeObject pLuaInstance_Type = {
@@ -880,14 +730,14 @@ extern PyTypeObject pLuaInstance_Type = {
 	.tp_itemsize = 0,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 	.tp_new = PyType_GenericNew,
-	.tp_init = get_LuaTable_Wrapper,
+	.tp_init = &get_LuaTable_Wrapper,
 	.tp_as_number = &pLuaInstance_NumberMethods,
 	.tp_as_mapping = &pLuaInstance_MappingMethods,
-	.tp_richcompare = compare_LuaInstance_Wrapper,
-	.tp_getattr = getattr_LuaInstance_Wrapper,
-	.tp_setattr = setattr_LuaInstance_Wrapper,
-	.tp_call = call_LuaInstance_Wrapper,
-	.tp_str = string_LuaInstance_Wrapper,
+	.tp_richcompare = &compare_LuaInstance_Wrapper,
+	.tp_getattr = &getattr_LuaInstance_Wrapper,
+	.tp_setattr = &setattr_LuaInstance_Wrapper,
+	.tp_call = &call_LuaInstance_Wrapper,
+	.tp_str = &string_LuaInstance_Wrapper,
 };
 
 extern PyTypeObject pLuaTable_Type = {

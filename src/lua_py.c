@@ -163,6 +163,7 @@ static int raise_error(lua_State* L, const char* msg)
 int call_PyFunc(lua_State* L)
 {
 	int args_count = lua_gettop(L);
+
 	PyLua_PyFunc* py_callable = (PyLua_PyFunc*)lua_touserdata(L, lua_upvalueindex(1));
 
 	if (!py_callable->function)
@@ -174,10 +175,15 @@ int call_PyFunc(lua_State* L)
 	PyObject* pArgs = PyTuple_New(args_count);
 	PyObject* pItem;
 
+	//printf("Lua Type at index %i: %s\n", -1, lua_typename(L, lua_type(L, -1)));
+	//printf("Lua Type at index %i: %s\n", -2, lua_typename(L, lua_type(L, -2)));
+
 	if (pArgs)
 	{
 		for (int i = 0, j = 1; i < args_count; i++, j++)
 		{
+			//printf("Lua Type at index %i: %s\n", i, lua_typename(L, lua_type(L, i)));
+			//printf("Lua Type at index %i: %s\n", j, lua_typename(L, lua_type(L, j)));
 			pItem = PyLua_LuaToPython(L, j);
 			PyTuple_SetItem(pArgs, i, pItem);
 		}
@@ -476,10 +482,11 @@ static int len_pythonobj_wrapper(lua_State* L)
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
 	lua_pop(L, 1); // remove userdata
 
-	PyObject* pReturn = PyObject_Size(py_obj->object);
-	if (pReturn)
+	Py_ssize_t len = PyObject_Size(py_obj->object);
+	if (len >= 0)
 	{
-		return PyLua_PythonToLua(L, pReturn);
+		lua_pushinteger(L, len);
+		return 1;
 	}
 
 	return raise_error(L, "Error: Occurred when getting Python Object attribute");
@@ -548,7 +555,7 @@ static int PyLua_PyLoadModule(lua_State* L)
 
 		wchar_t* path = Py_GetPath();
 
-		#if defined(_WIN32)
+#if defined(_WIN32)
 		wchar_t new_path[800];
 		if (!new_path)
 		{
@@ -557,7 +564,7 @@ static int PyLua_PyLoadModule(lua_State* L)
 		new_path[0] = L'.';
 		new_path[1] = L';';
 		new_path[2] = L'\0';
-		#else
+#else
 		wchar_t new_path[800];
 		if (!new_path)
 		{
@@ -566,7 +573,7 @@ static int PyLua_PyLoadModule(lua_State* L)
 		new_path[0] = L'.';
 		new_path[1] = L':';
 		new_path[2] = L'\0';
-		#endif
+#endif
 
 		wcsncat(new_path, path, wcslen(path));
 
@@ -696,8 +703,8 @@ static const struct luaL_Reg PY_Call_Wrapper[] = {
 #if defined(_WIN32)
 __declspec(dllexport)
 #endif
-int luaopen_pylua(lua_State* L) {
-
+int luaopen_pylua(lua_State* L)
+{
 	lua_pushvalue(L, LUA_REGISTRYINDEX);
 	cL = lua_newthread(L);
 	lua_setfield(L, -2, "pylua thread");
