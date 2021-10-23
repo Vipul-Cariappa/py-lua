@@ -257,7 +257,7 @@ static PyObject* get_LuaFunc_Wrapper(PyLua_LuaFunc* self, PyObject* args, PyObje
 	self->is_luathread = is_luathread;
 	self->thread_terminated = 0;
 
-	CHECK_STACK_ZERO(cL);
+	//CHECK_STACK_ZERO(cL);
 
 	return 0;
 }
@@ -404,7 +404,7 @@ static int setattr_LuaInstance_Wrapper(PyLua_LuaTable* self, char* attr, PyObjec
 {
 	// get table
 	lua_pushvalue(cL, LUA_REGISTRYINDEX);
-	lua_rawgeti(cL, -2, self->index);
+	lua_rawgeti(cL, -1, self->index);
 
 	// set value
 	// handle del
@@ -546,24 +546,24 @@ static PyObject* compare_LuaInstance_Wrapper(PyLua_LuaTable* self, PyObject* oth
 
 	switch (op)
 	{
-	case 0:
+	case Py_LT:
 		pReturn = operation_LuaTable_base(self, other, "__lt");
 		break;
-	case 1:
+	case Py_LE:
 		pReturn = operation_LuaTable_base(self, other, "__le");
 		break;
-	case 2:
+	case Py_EQ:
 		pReturn = operation_LuaTable_base(self, other, "__eq");
 		break;
-	case 3:
+	case Py_NE:
 		pReturn = operation_LuaTable_base(self, other, "__eq");
 		pReturn = flip_boolean(pReturn);
 		break;
-	case 4:
+	case Py_GT:
 		pReturn = operation_LuaTable_base(self, other, "__lt");
 		pReturn = flip_boolean(pReturn);
 		break;
-	case 5:
+	case Py_GE:
 		pReturn = operation_LuaTable_base(self, other, "__le");
 		pReturn = flip_boolean(pReturn);
 		break;

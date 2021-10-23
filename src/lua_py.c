@@ -240,7 +240,6 @@ static int add_pythonobj_wrapper(lua_State* L)
 {
 	lua_getfield(L, 1, "__python");
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
-	lua_pop(L, 1); // remove userdata
 
 	PyObject* other = PyLua_LuaToPython(L, 2);
 	PyObject* pReturn = PyNumber_Add(py_obj->object, other);
@@ -256,7 +255,6 @@ static int sub_pythonobj_wrapper(lua_State* L)
 {
 	lua_getfield(L, 1, "__python");
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
-	lua_pop(L, 1); // remove userdata
 
 	PyObject* other = PyLua_LuaToPython(L, 2);
 	PyObject* pReturn = PyNumber_Subtract(py_obj->object, other);
@@ -272,7 +270,6 @@ static int mul_pythonobj_wrapper(lua_State* L)
 {
 	lua_getfield(L, 1, "__python");
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
-	lua_pop(L, 1); // remove userdata
 
 	PyObject* other = PyLua_LuaToPython(L, 2);
 	PyObject* pReturn = PyNumber_Multiply(py_obj->object, other);
@@ -288,7 +285,6 @@ static int div_pythonobj_wrapper(lua_State* L)
 {
 	lua_getfield(L, 1, "__python");
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
-	lua_pop(L, 1); // remove userdata
 
 	PyObject* other = PyLua_LuaToPython(L, 2);
 	PyObject* pReturn = PyNumber_TrueDivide(py_obj->object, other);
@@ -304,7 +300,6 @@ static int floordiv_pythonobj_wrapper(lua_State* L)
 {
 	lua_getfield(L, 1, "__python");
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
-	lua_pop(L, 1); // remove userdata
 
 	PyObject* other = PyLua_LuaToPython(L, 2);
 	PyObject* pReturn = PyNumber_FloorDivide(py_obj->object, other);
@@ -320,7 +315,6 @@ static int pow_pythonobj_wrapper(lua_State* L)
 {
 	lua_getfield(L, 1, "__python");
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
-	lua_pop(L, 1); // remove userdata
 
 	PyObject* other = PyLua_LuaToPython(L, 2);
 	PyObject* pReturn = PyNumber_Power(py_obj->object, other, Py_None);
@@ -336,7 +330,6 @@ static int mod_pythonobj_wrapper(lua_State* L)
 {
 	lua_getfield(L, 1, "__python");
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
-	lua_pop(L, 1); // remove userdata
 
 	PyObject* other = PyLua_LuaToPython(L, 2);
 	PyObject* pReturn = PyNumber_Remainder(py_obj->object, other);
@@ -352,7 +345,6 @@ static int lshift_pythonobj_wrapper(lua_State* L)
 {
 	lua_getfield(L, 1, "__python");
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
-	lua_pop(L, 1); // remove userdata
 
 	PyObject* other = PyLua_LuaToPython(L, 2);
 	PyObject* pReturn = PyNumber_Lshift(py_obj->object, other);
@@ -368,7 +360,6 @@ static int rshift_pythonobj_wrapper(lua_State* L)
 {
 	lua_getfield(L, 1, "__python");
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
-	lua_pop(L, 1); // remove userdata
 
 	PyObject* other = PyLua_LuaToPython(L, 2);
 	PyObject* pReturn = PyNumber_Rshift(py_obj->object, other);
@@ -384,7 +375,6 @@ static int band_pythonobj_wrapper(lua_State* L)
 {
 	lua_getfield(L, 1, "__python");
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
-	lua_pop(L, 1); // remove userdata
 
 	PyObject* other = PyLua_LuaToPython(L, 2);
 	PyObject* pReturn = PyNumber_And(py_obj->object, other);
@@ -400,7 +390,6 @@ static int bor_pythonobj_wrapper(lua_State* L)
 {
 	lua_getfield(L, 1, "__python");
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
-	lua_pop(L, 1); // remove userdata
 
 	PyObject* other = PyLua_LuaToPython(L, 2);
 	PyObject* pReturn = PyNumber_Or(py_obj->object, other);
@@ -416,7 +405,6 @@ static int bxor_pythonobj_wrapper(lua_State* L)
 {
 	lua_getfield(L, 1, "__python");
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
-	lua_pop(L, 1); // remove userdata
 
 	PyObject* other = PyLua_LuaToPython(L, 2);
 	PyObject* pReturn = PyNumber_Xor(py_obj->object, other);
@@ -432,7 +420,6 @@ static int eq_pythonobj_wrapper(lua_State* L)
 {
 	lua_getfield(L, 1, "__python");
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
-	lua_pop(L, 1); // remove userdata
 
 	PyObject* other = PyLua_LuaToPython(L, 2);
 	PyObject* pReturn = PyObject_RichCompare(py_obj->object, other, 2);
@@ -448,7 +435,6 @@ static int lt_pythonobj_wrapper(lua_State* L)
 {
 	lua_getfield(L, 1, "__python");
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
-	lua_pop(L, 1); // remove userdata
 
 	PyObject* other = PyLua_LuaToPython(L, 2);
 	PyObject* pReturn = PyObject_RichCompare(py_obj->object, other, 0);
@@ -464,7 +450,6 @@ static int le_pythonobj_wrapper(lua_State* L)
 {
 	lua_getfield(L, 1, "__python");
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
-	lua_pop(L, 1); // remove userdata
 
 	PyObject* other = PyLua_LuaToPython(L, 2);
 	PyObject* pReturn = PyObject_RichCompare(py_obj->object, other, 1);
@@ -480,7 +465,6 @@ static int len_pythonobj_wrapper(lua_State* L)
 {
 	lua_getfield(L, 1, "__python");
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
-	lua_pop(L, 1); // remove userdata
 
 	Py_ssize_t len = PyObject_Size(py_obj->object);
 	if (len >= 0)
@@ -496,7 +480,6 @@ static int neg_pythonobj_wrapper(lua_State* L)
 {
 	lua_getfield(L, 1, "__python");
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
-	lua_pop(L, 1); // remove userdata
 
 	PyObject* pReturn = PyNumber_Negative(py_obj->object);
 	if (pReturn)
@@ -511,7 +494,6 @@ static int bnot_pythonobj_wrapper(lua_State* L)
 {
 	lua_getfield(L, 1, "__python");
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
-	lua_pop(L, 1); // remove userdata
 
 	PyObject* pReturn = PyNumber_Invert(py_obj->object);
 	if (pReturn)
@@ -527,7 +509,6 @@ static int get_pythonobj_wrapper(lua_State* L)
 {
 	lua_getfield(L, 1, "__python");
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
-	lua_pop(L, 1); // remove userdata
 
 	// attribute to string
 	const char* attr = lua_tostring(L, 2);
@@ -540,6 +521,14 @@ static int get_pythonobj_wrapper(lua_State* L)
 	}
 
 	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+}
+
+
+static int str_pythonobj_wrapper(lua_State* L)
+{
+	// to be implemented
+	lua_pushfstring(L, "Python string");
+	return 1;
 }
 
 
@@ -696,6 +685,7 @@ static const struct luaL_Reg PY_Call_Wrapper[] = {
 	{"__unm", neg_pythonobj_wrapper},
 	{"__bnot", bnot_pythonobj_wrapper},
 	{"__index", get_pythonobj_wrapper},
+	{"__tostring", str_pythonobj_wrapper},
 	{NULL, NULL}
 };
 

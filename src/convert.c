@@ -183,16 +183,18 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
 			lua_replace(L, -3);
 			lua_pop(L, 1);
 		}
+		else
+		{
+			lua_newtable(L);
+			lua_getglobal(L, "PythonClassWrapper");
+			lua_setmetatable(L, -2);
 
-		lua_newtable(L);
-		lua_getglobal(L, "PythonClassWrapper");
-		lua_setmetatable(L, -2);
+			size_t nbytes = sizeof(PyLua_PyObject);
+			PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_newuserdata(L, nbytes);
+			lua_setfield(L, -2, "__python");
 
-		size_t nbytes = sizeof(PyLua_PyObject);
-		PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_newuserdata(L, nbytes);
-		lua_setfield(L, -2, "__python");
-
-		py_obj->object = pItem;
+			py_obj->object = pItem;
+		}
 	}
 
 	CHECK_STACK_SIZE(L, 1);
@@ -230,8 +232,11 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 			Py_INCREF(Py_True);
 			pReturn = Py_True;
 		}
-		Py_INCREF(Py_False);
-		pReturn = Py_False;
+		else
+		{
+			Py_INCREF(Py_False);
+			pReturn = Py_False;
+		}
 
 	}
 	else if (type == LUA_TSTRING)
@@ -244,80 +249,86 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 	else if (type == LUA_TTABLE)
 	{
 		// check if table is a wrapper around python object
+
 		lua_getfield(L, index, "__python");
 		if (lua_type(L, -1) == LUA_TUSERDATA)
 		{
 			PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, -1);
-			lua_pop(L, 1);
 			pReturn = py_obj->object;
-		}
-		lua_pop(L, 1);
-
-		if (lua_getmetatable(L, index))
-		{
-			// to python instance
-			
-			lua_pop(L, 1); // remove metatable
-
-			lua_pushvalue(L, LUA_REGISTRYINDEX);
-			lua_pushvalue(L, index);
-			int ref_value = luaL_ref(L, -2);
-
 			lua_pop(L, 1);
-
-			PyObject* obj = PyObject_GetAttrString(pPylua_Module, "lua_instance_wrapper");
-
-			if (obj)
-			{
-				PyObject* pArgs = Py_BuildValue("(i)", ref_value);
-				pReturn = PyObject_CallObject(obj, pArgs);
-
-			}
-			
-			//TODO: improve error handling
-			//if (PyErr_Occurred())
-			//{
-			//	PyErr_Print();
-			//}
-			//lua_pop(L, 1);
-			//return luaL_error(L, "Error: While executing python function");
-
 		}
 		else
 		{
-			lua_pushvalue(L, LUA_REGISTRYINDEX);
-			lua_pushvalue(L, index);
-			int ref_value = luaL_ref(L, -2);
-
 			lua_pop(L, 1);
-
-			PyObject* obj = PyObject_GetAttrString(pPylua_Module, "lua_table_wrapper");
-
-			if (obj)
+			if (lua_getmetatable(L, index))
 			{
-				PyObject* pArgs = Py_BuildValue("(i)", ref_value);
-				pReturn = PyObject_CallObject(obj, pArgs);
+				// to python instance
+
+				lua_pop(L, 1); // remove metatable
+
+				lua_pushvalue(L, index);
+				lua_pushvalue(L, LUA_REGISTRYINDEX);
+				lua_pushvalue(L, -2);
+				int ref_value = luaL_ref(L, -2);
+
+				lua_pop(L, 2);
+
+				PyObject* obj = PyObject_GetAttrString(pPylua_Module, "lua_instance_wrapper");
+
+				if (obj)
+				{
+					PyObject* pArgs = Py_BuildValue("(i)", ref_value);
+					pReturn = PyObject_CallObject(obj, pArgs);
+
+				}
+
+				//TODO: improve error handling
+				//if (PyErr_Occurred())
+				//{
+				//	PyErr_Print();
+				//}
+				//lua_pop(L, 1);
+				//return luaL_error(L, "Error: While executing python function");
 
 			}
+			else
+			{
+				lua_pushvalue(L, index);
+				lua_pushvalue(L, LUA_REGISTRYINDEX);
+				lua_pushvalue(L, -2);
+				int ref_value = luaL_ref(L, -2);
 
-			//TODO: improve error handling
-			//if (PyErr_Occurred())
-			//{
-			//	PyErr_Print();
-			//}
-			//lua_pop(L, 1);
-			//return luaL_error(L, "Error: While executing python function");
+				lua_pop(L, 2);
+
+				PyObject* obj = PyObject_GetAttrString(pPylua_Module, "lua_table_wrapper");
+
+				if (obj)
+				{
+					PyObject* pArgs = Py_BuildValue("(i)", ref_value);
+					pReturn = PyObject_CallObject(obj, pArgs);
+
+				}
+
+				//TODO: improve error handling
+				//if (PyErr_Occurred())
+				//{
+				//	PyErr_Print();
+				//}
+				//lua_pop(L, 1);
+				//return luaL_error(L, "Error: While executing python function");
+			}
 		}
 
 	}
 	else if (type == LUA_TFUNCTION)
 	{
 		// to python function
-		lua_pushvalue(L, LUA_REGISTRYINDEX);
 		lua_pushvalue(L, index);
+		lua_pushvalue(L, LUA_REGISTRYINDEX);
+		lua_pushvalue(L, -2);
 		int ref_value = luaL_ref(L, -2);
 
-		lua_pop(L, 1);
+		lua_pop(L, 2);
 
 		PyObject* func = PyObject_GetAttrString(pPylua_Module, "lua_function_wrapper");
 
@@ -340,11 +351,12 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 	else if (type == LUA_TTHREAD)
 	{
 		// to python generator
-		lua_pushvalue(L, LUA_REGISTRYINDEX);
 		lua_pushvalue(L, index);
+		lua_pushvalue(L, LUA_REGISTRYINDEX);
+		lua_pushvalue(L, -2);
 		int ref_value = luaL_ref(L, -2);
 
-		lua_pop(L, 1);
+		lua_pop(L, 2);
 
 		PyObject* func = PyObject_GetAttrString(pPylua_Module, "lua_function_wrapper");
 
@@ -366,4 +378,6 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 	assert(pReturn);
 
 	CHECK_STACK_SIZE(L, 0);
+
+	return pReturn;
 }
