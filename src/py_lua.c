@@ -241,6 +241,17 @@ static PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwa
 	return pReturn;
 }
 
+static PyObject* gc_LuaFunc(PyLua_LuaFunc* self)
+{
+	lua_pushvalue(cL, LUA_REGISTRYINDEX);
+	luaL_unref(cL, -1, self->index);
+	lua_pop(cL, 1);
+
+	CHECK_STACK_ZERO(cL);
+
+	return 0;
+}
+
 static PyObject* get_LuaFunc_Wrapper(PyLua_LuaFunc* self, PyObject* args, PyObject* kwargs)
 {
 	if (kwargs)
@@ -724,6 +735,17 @@ static PyObject* get_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* args, PyOb
 	return 0;
 }
 
+static PyObject* gc_LuaTable(PyLua_LuaTable* self)
+{
+	lua_pushvalue(cL, LUA_REGISTRYINDEX);
+	luaL_unref(cL, -1, self->index);
+	lua_pop(cL, 1);
+
+	CHECK_STACK_ZERO(cL);
+
+	return 0;
+}
+
 static PyTypeObject pLuaFunc_Type = {
 	PyVarObject_HEAD_INIT(NULL, 0)
 	.tp_name = "pylua.lua_function_wrapper",
@@ -735,7 +757,8 @@ static PyTypeObject pLuaFunc_Type = {
 	.tp_init = &get_LuaFunc_Wrapper,
 	.tp_call = &call_LuaFunc,
 	.tp_iter = &iter_LuaCoroutine,
-	.tp_iternext = &next_LuaCoroutine
+	.tp_iternext = &next_LuaCoroutine,
+	.tp_finalize = &gc_LuaFunc,
 };
 
 static PyMappingMethods pLuaInstance_MappingMethods = {
@@ -782,6 +805,7 @@ PyTypeObject pLuaInstance_Type = {
 	.tp_setattr = &setattr_LuaInstance_Wrapper,
 	.tp_call = &call_LuaInstance_Wrapper,
 	.tp_str = &string_LuaInstance_Wrapper,
+	.tp_finalize = &gc_LuaTable,
 };
 
 PyTypeObject pLuaTable_Type = {
@@ -795,6 +819,7 @@ PyTypeObject pLuaTable_Type = {
 	.tp_init = get_LuaTable_Wrapper,
 	.tp_as_mapping = &pLuaTable_MappingMethods,
 	.tp_call = call_LuaTable_Wrapper,
+	.tp_finalize = &gc_LuaTable,
 };
 
 
