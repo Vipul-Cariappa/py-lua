@@ -8,72 +8,6 @@ static PyObject* LuaError;
 extern lua_State* cL;
 
 
-// to be removed
-void iterate_and_print_stack(lua_State* L)
-{
-	SAVE_STACK_SIZE(L);
-
-	int stack_size = lua_gettop(L);
-
-	for (int i = 1; i <= stack_size; i++)
-	{
-		lua_pushvalue(L, i);
-		const char* value = lua_tostring(L, -1);
-		if (!value)
-		{
-			printf("%i => %p\t Type: %s\n", i, lua_topointer(L, -2), luaL_typename(L, -2));
-		}
-		else
-		{
-			printf("%i => %s\n", i, value);
-		}
-		lua_pop(L, 1);
-	}
-	
-	CHECK_STACK_SIZE(L, 0);
-
-}
-void iterate_and_print_table(lua_State* L, int index)
-{
-	SAVE_STACK_SIZE(L);
-	// Push another reference to the table on top of the stack (so we know
-	// where it is, and this function can work for negative, positive and
-	// pseudo indices
-	lua_pushvalue(L, index);
-	// stack now contains: -1 => table
-	lua_pushnil(L);
-	// stack now contains: -1 => nil; -2 => table
-	while (lua_next(L, -2))
-	{
-		// stack now contains: -1 => value; -2 => key; -3 => table
-		// copy the key so that lua_tostring does not modify the original
-		lua_pushvalue(L, -2);
-		// stack now contains: -1 => key; -2 => value; -3 => key; -4 => table
-		const char* key = lua_tostring(L, -1);
-		const char* value = lua_tostring(L, -2);
-		if (!value)
-		{
-			printf("%s => %p\t Type: %s\n", key, lua_topointer(L, -2), luaL_typename(L, -2));
-		}
-		else
-		{
-			printf("%s => %s\n", key, value);
-		}
-		// pop value + copy of key, leaving original key
-		lua_pop(L, 2);
-		// stack now contains: -1 => key; -2 => table
-	}
-	// stack now contains: -1 => table (when lua_next returns 0 it pops the key
-	// but does not push anything.)
-	// Pop table
-	lua_pop(L, 1);
-	
-	CHECK_STACK_SIZE(L, 0);
-
-}
-// -------------
-
-
 static PyObject* create_return(lua_State* L, int len)
 {
 	SAVE_STACK_SIZE(L);
@@ -298,8 +232,6 @@ static PyObject* operation_LuaTable_base(PyLua_LuaTable* self, PyObject* other, 
 
 	// get other element
 	PyLua_PythonToLua(cL, other);
-
-	//printf("Arg1: %p   Arg2: %p, Op: %s\n", lua_topointer(cL, -2), lua_topointer(cL, -1), op);
 
 	// call function
 	if (lua_pcall(cL, 2, 1, 0) != LUA_OK)

@@ -39,14 +39,12 @@
 
 	char* str_replace(char* orig, char* rep, char* with);
 
-	// to be removed
-	void iterate_and_print_stack(lua_State* L);
-	void iterate_and_print_table(lua_State* L, int index);
+	#ifdef DEBUG
+		#define SAVE_STACK_SIZE(L) size_t _ss = lua_gettop((L))
+		#define CHECK_STACK_SIZE(L, inc) assert((_ss + (inc)) == lua_gettop((L)))
+		#define CHECK_STACK_ZERO(L) assert(lua_gettop((L)) == 0)
+	#endif // DEBUG
 
-	#define SAVE_STACK_SIZE(L) size_t _ss = lua_gettop((L))
-	#define CHECK_STACK_SIZE(L, inc) assert((_ss + (inc)) == lua_gettop((L)))
-	#define CHECK_STACK_ZERO(L) assert(lua_gettop((L)) == 0)
 
-	// -------------
 
 #endif // !pylua

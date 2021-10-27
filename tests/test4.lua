@@ -164,10 +164,9 @@ function test_python_operations()
 end
 
 function test_classes_python()
-    -- print(py_module.c1.radius)
-    -- print(type(py_module.c1))
-    -- print(type(py_module.Circle))
-    -- print(py_module.c1 + py_module.c2)
+    local tmp = py_module.Circle(10)
+    lu.assertEquals(tmp.radius, 10)
+    lu.assertEquals(tmp.get_area(), 314)
 end
 
 function test_python_method()

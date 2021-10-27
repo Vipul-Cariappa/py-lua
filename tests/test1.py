@@ -101,10 +101,6 @@ def operations_on_objects(obj1, obj2):
 def insert_new(obj):
     obj.python = "New Object"
 
-
-def obj_bnot(this, *args):
-    return 10
-
 def test_lua_class(rect):
     r = rect(4, 6)
     assert r.get_area() == 24
