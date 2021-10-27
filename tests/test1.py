@@ -52,6 +52,10 @@ class Circle:
             return True
         return False
 
+    def __str__(self):
+        return f"Circle(radius={self.radius})"
+
+
 class Call:
     def __init__(self, *args, **kwargs):
         pass

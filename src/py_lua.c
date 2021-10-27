@@ -766,7 +766,7 @@ static PyNumberMethods pLuaInstance_NumberMethods = {
 	.nb_matrix_multiply = &concat_LuaInstance_Wrapper,
 };
 
-extern PyTypeObject pLuaInstance_Type = {
+PyTypeObject pLuaInstance_Type = {
 	PyVarObject_HEAD_INIT(NULL, 0)
 	.tp_name = "pylua.lua_instance_wrapper",
 	.tp_doc = "pylua.lua_instance_wrapper",
@@ -784,7 +784,7 @@ extern PyTypeObject pLuaInstance_Type = {
 	.tp_str = &string_LuaInstance_Wrapper,
 };
 
-extern PyTypeObject pLuaTable_Type = {
+PyTypeObject pLuaTable_Type = {
 	PyVarObject_HEAD_INIT(NULL, 0)
 	.tp_name = "pylua.lua_table_wrapper",
 	.tp_doc = "pylua.lua_table_wrapper",

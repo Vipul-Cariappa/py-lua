@@ -157,6 +157,10 @@ function test_python_operations()
     
     tmp = py_module.c2 < py_module.c1
     lu.assertEquals(tmp, false)
+
+    tmp = tostring(py_module.c1)
+    lu.assertEquals(tmp, "Circle(radius=1)")
+
 end
 
 function test_classes_python()
@@ -169,6 +173,10 @@ end
 function test_python_method()
     lu.assertEquals(py_module.c1.get_area(), 3.14)
     lu.assertEquals(py_module.c2.get_area(), 12.56)
+end
+
+function test_python_call()
+    lu.assertEquals(py_module.f(), "Call.__call__ function")
 end
 
 -- os.exit(lu.LuaUnit.run())
