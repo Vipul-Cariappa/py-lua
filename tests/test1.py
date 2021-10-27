@@ -103,7 +103,7 @@ def obj_bnot(this, *args):
 
 def test_lua_class(rect):
     r = rect(4, 6)
-    # assert r.get_area() == 24
+    assert r.get_area() == 24
     assert r.length == 4
     assert r.breadth == 6
 

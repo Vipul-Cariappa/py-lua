@@ -215,6 +215,12 @@ static PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwa
 	lua_pushvalue(cL, LUA_REGISTRYINDEX);
 	lua_rawgeti(cL, -1, self->index);
 
+	// convert python variables to lua type
+	for (int i = 0; i < arg_len; i++)
+	{
+		PyLua_PythonToLua(cL, PyTuple_GetItem(args, i));
+	}
+
 	// execute function
 	if (lua_pcall(cL, arg_len, LUA_MULTRET, 0) != LUA_OK)
 	{
@@ -224,10 +230,10 @@ static PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwa
 		return NULL;
 	}
 
-	int return_len = lua_gettop(cL) - stack_size + 1;
+	int return_len = lua_gettop(cL) - (stack_size + 1);
 
 	PyObject* pReturn = create_return(cL, return_len);
-	lua_pop(cL, return_len);
+	lua_pop(cL, return_len + 1);
 
 	// check stack size
 	CHECK_STACK_ZERO(cL);
@@ -383,17 +389,55 @@ static int setelem_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* pKey, PyObje
 	return 0;
 }
 
+static int wrapper_around_method(lua_State* L)
+{
+	int stack_size = lua_gettop(L);
+	lua_pushvalue(L, lua_upvalueindex(1));
+	lua_insert(L, 1);
+	lua_pushvalue(L, lua_upvalueindex(2));
+	lua_insert(L, 1);
+
+	assert(stack_size + 2 == lua_gettop(L));
+
+	// execute function
+	if (lua_pcall(L, stack_size + 1, LUA_MULTRET, 0) != LUA_OK)
+	{
+		//return luaL_error(L, "Error: While calling the lua function.");
+
+		PyErr_Format(LuaError, "\nError raise while executing lua\nLua Traceback:\n %s\n", lua_tostring(cL, -1));
+		return NULL;
+	}
+
+	int return_len = lua_gettop(L);
+	assert(lua_gettop(L) == return_len);
+
+	return return_len;
+}
+
 static PyObject* getattr_LuaInstance_Wrapper(PyLua_LuaTable* self, char* attr)
 {
+	PyObject* pReturn;
+
 	// get table
 	lua_pushvalue(cL, LUA_REGISTRYINDEX);
 	lua_rawgeti(cL, -1, self->index);
 
 	// get item
 	lua_getfield(cL, -1, attr);
-	PyObject* pReturn = PyLua_LuaToPython(cL, -1);
 
-	lua_pop(cL, 3);
+	// Use LuaToPython only if the attribute is not function (i.e method)
+	if (lua_type(cL, -1) != LUA_TFUNCTION)
+	{
+		pReturn = PyLua_LuaToPython(cL, -1);
+		lua_pop(cL, 3);
+	}
+	// else wrap it around wrapper_around_method function and set closures values to be.
+	else 
+	{
+		lua_pushcclosure(cL, wrapper_around_method, 2);
+		pReturn = PyLua_LuaToPython(cL, -1);
+		lua_pop(cL, 2);
+	}
 
 	CHECK_STACK_ZERO(cL);
 
