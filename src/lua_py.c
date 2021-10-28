@@ -159,6 +159,34 @@ static int raise_error(lua_State* L, const char* msg)
 	return lua_error(L);
 }
 
+typedef PyObject* (*binary_op)(PyObject*, PyObject*);
+typedef PyObject* (*unary_op)(PyObject*);
+
+static int binary_base_pyobj_wrapper(lua_State* L, binary_op func)
+{
+	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, 1);
+
+	PyObject* other = PyLua_LuaToPython(L, 2);
+	if (!other)
+	{
+		return raise_error(L, "Error: While converting from Lua to Python");
+	}
+
+	PyObject* pReturn = func(py_obj->object, other);
+	if (pReturn)
+	{
+		if (PyLua_PythonToLua(L, pReturn) < 0)
+		{
+			Py_DECREF(pReturn);
+			return raise_error(L, "Error: While converting from Python to Lua");
+		}
+		Py_DECREF(pReturn);
+		return 1;
+	}
+
+	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+}
+
 
 int call_PyFunc(lua_State* L)
 {
@@ -180,6 +208,10 @@ int call_PyFunc(lua_State* L)
 		for (int i = 0, j = 1; i < args_count; i++, j++)
 		{
 			pItem = PyLua_LuaToPython(L, j);
+			if (!pItem)
+			{
+				return raise_error(L, "Error: While converting from Lua to Python");
+			}
 			PyTuple_SetItem(pArgs, i, pItem);
 		}
 
@@ -187,20 +219,17 @@ int call_PyFunc(lua_State* L)
 		Py_DECREF(pArgs);
 		if (pResult)
 		{
-			PyLua_PythonToLua(L, pResult);
+			if (PyLua_PythonToLua(L, pResult) < 0)
+			{
+				return raise_error(L, "Error: While converting from Python to Lua");
+			}
+			
 			Py_DECREF(pResult);
 
 			return 1;
 		}
-		else if (PyErr_Occurred())
-		{
-			return raise_error(L, "Error: While calling python function");
-		}
-		else
-		{
-			// raise error which even I don't know
-		}
 
+		return raise_error(L, "Error: While calling python function");
 	}
 
 	LUA_MEMORY_ERROR(L);
@@ -215,7 +244,10 @@ int iter_PyGenerator(lua_State* L, ...)
 	PyObject* pItem = PyIter_Next(py_iter->iterator);
 	if (pItem)
 	{
-		PyLua_PythonToLua(L, pItem);
+		if (PyLua_PythonToLua(L, pItem) < 0)
+		{
+			return raise_error(L, "Error: While converting from Python to Lua");
+		}
 		Py_DECREF(pItem);
 		return lua_yieldk(L, 1, 0, iter_PyGenerator);
 	}
@@ -230,102 +262,50 @@ int iter_PyGenerator(lua_State* L, ...)
 	return luaL_error(L, "Error: Stop Iteration");
 }
 
-
 static int add_pythonobj_wrapper(lua_State* L)
 {
-	//lua_getfield(L, 1, "__python");
-	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, 1);
-
-	PyObject* other = PyLua_LuaToPython(L, 2);
-	PyObject* pReturn = PyNumber_Add(py_obj->object, other);
-	if (pReturn)
-	{
-		PyLua_PythonToLua(L, pReturn);
-		Py_DECREF(pReturn);
-		return 1;
-	}
-
-	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+	return binary_base_pyobj_wrapper(L, PyNumber_Add);
 }
 
 static int sub_pythonobj_wrapper(lua_State* L)
 {
-	//lua_getfield(L, 1, "__python");
-	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, 1);
-
-	PyObject* other = PyLua_LuaToPython(L, 2);
-	PyObject* pReturn = PyNumber_Subtract(py_obj->object, other);
-	if (pReturn)
-	{
-		PyLua_PythonToLua(L, pReturn);
-		Py_DECREF(pReturn);
-		return 1;
-	}
-
-	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+	return binary_base_pyobj_wrapper(L, PyNumber_Subtract);
 }
 
 static int mul_pythonobj_wrapper(lua_State* L)
 {
-	//lua_getfield(L, 1, "__python");
-	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, 1);
-
-	PyObject* other = PyLua_LuaToPython(L, 2);
-	PyObject* pReturn = PyNumber_Multiply(py_obj->object, other);
-	if (pReturn)
-	{
-		PyLua_PythonToLua(L, pReturn);
-		Py_DECREF(pReturn);
-		return 1;
-	}
-
-	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+	return binary_base_pyobj_wrapper(L, PyNumber_Multiply);
 }
 
 static int div_pythonobj_wrapper(lua_State* L)
 {
-	//lua_getfield(L, 1, "__python");
-	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, 1);
-
-	PyObject* other = PyLua_LuaToPython(L, 2);
-	PyObject* pReturn = PyNumber_TrueDivide(py_obj->object, other);
-	if (pReturn)
-	{
-		PyLua_PythonToLua(L, pReturn);
-		Py_DECREF(pReturn);
-		return 1;
-	}
-
-	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+	return binary_base_pyobj_wrapper(L, PyNumber_TrueDivide);
 }
 
 static int floordiv_pythonobj_wrapper(lua_State* L)
 {
-	//lua_getfield(L, 1, "__python");
-	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, 1);
-
-	PyObject* other = PyLua_LuaToPython(L, 2);
-	PyObject* pReturn = PyNumber_FloorDivide(py_obj->object, other);
-	if (pReturn)
-	{
-		PyLua_PythonToLua(L, pReturn);
-		Py_DECREF(pReturn);
-		return 1;
-	}
-
-	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+	return binary_base_pyobj_wrapper(L, PyNumber_FloorDivide);
 }
 
 static int pow_pythonobj_wrapper(lua_State* L)
 {
-	//lua_getfield(L, 1, "__python");
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, 1);
 
 	PyObject* other = PyLua_LuaToPython(L, 2);
+	if (!other)
+	{
+		return raise_error(L, "Error: While converting from Lua to Python");
+	}
+
 	PyObject* pReturn = PyNumber_Power(py_obj->object, other, Py_None);
 	if (pReturn)
 	{
 		PyLua_PythonToLua(L, pReturn);
+		if (PyLua_PythonToLua(L, pReturn) < 0)
+		{
+			Py_DECREF(pReturn);
+			return raise_error(L, "Error: While converting from Python to Lua");
+		}
 		Py_DECREF(pReturn);
 		return 1;
 	}
@@ -335,116 +315,52 @@ static int pow_pythonobj_wrapper(lua_State* L)
 
 static int mod_pythonobj_wrapper(lua_State* L)
 {
-	//lua_getfield(L, 1, "__python");
-	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, 1);
-
-	PyObject* other = PyLua_LuaToPython(L, 2);
-	PyObject* pReturn = PyNumber_Remainder(py_obj->object, other);
-	if (pReturn)
-	{
-		PyLua_PythonToLua(L, pReturn);
-		Py_DECREF(pReturn);
-		return 1;
-	}
-
-	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+	return binary_base_pyobj_wrapper(L, PyNumber_Remainder);
 }
 
 static int lshift_pythonobj_wrapper(lua_State* L)
 {
-	//lua_getfield(L, 1, "__python");
-	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, 1);
-
-	PyObject* other = PyLua_LuaToPython(L, 2);
-	PyObject* pReturn = PyNumber_Lshift(py_obj->object, other);
-	if (pReturn)
-	{
-		PyLua_PythonToLua(L, pReturn);
-		Py_DECREF(pReturn);
-		return 1;
-	}
-
-	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+	return binary_base_pyobj_wrapper(L, PyNumber_Lshift);
 }
 
 static int rshift_pythonobj_wrapper(lua_State* L)
 {
-	//lua_getfield(L, 1, "__python");
-	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, 1);
-
-	PyObject* other = PyLua_LuaToPython(L, 2);
-	PyObject* pReturn = PyNumber_Rshift(py_obj->object, other);
-	if (pReturn)
-	{
-		PyLua_PythonToLua(L, pReturn);
-		Py_DECREF(pReturn);
-		return 1;
-	}
-
-	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+	return binary_base_pyobj_wrapper(L, PyNumber_Rshift);
 }
 
 static int band_pythonobj_wrapper(lua_State* L)
 {
-	//lua_getfield(L, 1, "__python");
-	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, 1);
-
-	PyObject* other = PyLua_LuaToPython(L, 2);
-	PyObject* pReturn = PyNumber_And(py_obj->object, other);
-	if (pReturn)
-	{
-		PyLua_PythonToLua(L, pReturn);
-		Py_DECREF(pReturn);
-		return 1;
-	}
-
-	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+	return binary_base_pyobj_wrapper(L, PyNumber_And);
 }
 
 static int bor_pythonobj_wrapper(lua_State* L)
 {
-	//lua_getfield(L, 1, "__python");
-	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, 1);
-
-	PyObject* other = PyLua_LuaToPython(L, 2);
-	PyObject* pReturn = PyNumber_Or(py_obj->object, other);
-	if (pReturn)
-	{
-		PyLua_PythonToLua(L, pReturn);
-		Py_DECREF(pReturn);
-		return 1;
-	}
-
-	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+	return binary_base_pyobj_wrapper(L, PyNumber_Or);
 }
 
 static int bxor_pythonobj_wrapper(lua_State* L)
 {
-	//lua_getfield(L, 1, "__python");
-	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, 1);
-
-	PyObject* other = PyLua_LuaToPython(L, 2);
-	PyObject* pReturn = PyNumber_Xor(py_obj->object, other);
-	if (pReturn)
-	{
-		PyLua_PythonToLua(L, pReturn);
-		Py_DECREF(pReturn);
-		return 1;
-	}
-
-	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+	return binary_base_pyobj_wrapper(L, PyNumber_Xor);
 }
 
 static int eq_pythonobj_wrapper(lua_State* L)
 {
-	//lua_getfield(L, 1, "__python");
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, 1);
 
 	PyObject* other = PyLua_LuaToPython(L, 2);
+	if (!other)
+	{
+		return raise_error(L, "Error: While converting from Lua to Python");
+	}
+
 	PyObject* pReturn = PyObject_RichCompare(py_obj->object, other, 2);
 	if (pReturn)
 	{
-		PyLua_PythonToLua(L, pReturn);
+		if (PyLua_PythonToLua(L, pReturn) < 0)
+		{
+			Py_DECREF(pReturn);
+			return raise_error(L, "Error: While converting from Python to Lua");
+		}
 		Py_DECREF(pReturn);
 		return 1;
 	}
@@ -454,14 +370,22 @@ static int eq_pythonobj_wrapper(lua_State* L)
 
 static int lt_pythonobj_wrapper(lua_State* L)
 {
-	//lua_getfield(L, 1, "__python");
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, 1);
 
 	PyObject* other = PyLua_LuaToPython(L, 2);
+	if (!other)
+	{
+		return raise_error(L, "Error: While converting from Lua to Python");
+	}
+
 	PyObject* pReturn = PyObject_RichCompare(py_obj->object, other, 0);
 	if (pReturn)
 	{
-		PyLua_PythonToLua(L, pReturn);
+		if (PyLua_PythonToLua(L, pReturn) < 0)
+		{
+			Py_DECREF(pReturn);
+			return raise_error(L, "Error: While converting from Python to Lua");
+		}
 		Py_DECREF(pReturn);
 		return 1;
 	}
@@ -471,14 +395,22 @@ static int lt_pythonobj_wrapper(lua_State* L)
 
 static int le_pythonobj_wrapper(lua_State* L)
 {
-	//lua_getfield(L, 1, "__python");
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, 1);
 
 	PyObject* other = PyLua_LuaToPython(L, 2);
+	if (!other)
+	{
+		return raise_error(L, "Error: While converting from Lua to Python");
+	}
+
 	PyObject* pReturn = PyObject_RichCompare(py_obj->object, other, 1);
 	if (pReturn)
 	{
-		PyLua_PythonToLua(L, pReturn);
+		if (PyLua_PythonToLua(L, pReturn) < 0)
+		{
+			Py_DECREF(pReturn);
+			return raise_error(L, "Error: While converting from Python to Lua");
+		}
 		Py_DECREF(pReturn);
 		return 1;
 	}
@@ -488,7 +420,6 @@ static int le_pythonobj_wrapper(lua_State* L)
 
 static int len_pythonobj_wrapper(lua_State* L)
 {
-	//lua_getfield(L, 1, "__python");
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, 1);
 
 	Py_ssize_t len = PyObject_Size(py_obj->object);
@@ -503,13 +434,16 @@ static int len_pythonobj_wrapper(lua_State* L)
 
 static int neg_pythonobj_wrapper(lua_State* L)
 {
-	//lua_getfield(L, 1, "__python");
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, 1);
 
 	PyObject* pReturn = PyNumber_Negative(py_obj->object);
 	if (pReturn)
 	{
-		PyLua_PythonToLua(L, pReturn);
+		if (PyLua_PythonToLua(L, pReturn) < 0)
+		{
+			Py_DECREF(pReturn);
+			return raise_error(L, "Error: While converting from Python to Lua");
+		}
 		Py_DECREF(pReturn);
 		return 1;
 	}
@@ -519,13 +453,16 @@ static int neg_pythonobj_wrapper(lua_State* L)
 
 static int bnot_pythonobj_wrapper(lua_State* L)
 {
-	//lua_getfield(L, 1, "__python");
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, 1);
 
 	PyObject* pReturn = PyNumber_Invert(py_obj->object);
 	if (pReturn)
 	{
-		PyLua_PythonToLua(L, pReturn);
+		if (PyLua_PythonToLua(L, pReturn) < 0)
+		{
+			Py_DECREF(pReturn);
+			return raise_error(L, "Error: While converting from Python to Lua");
+		}
 		Py_DECREF(pReturn);
 		return 1;
 	}
@@ -535,8 +472,7 @@ static int bnot_pythonobj_wrapper(lua_State* L)
 
 
 static int get_pythonobj_wrapper(lua_State* L)
-{
-	//lua_getfield(L, 1, "__python");
+{	
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, 1);
 
 	// attribute to string
@@ -547,7 +483,32 @@ static int get_pythonobj_wrapper(lua_State* L)
 	if (pReturn)
 	{
 		PyLua_PythonToLua(L, pReturn);
+		Py_DECREF(pReturn);
 		return 1;
+	}
+	else
+	{
+		if (PyMapping_Check(py_obj->object))
+		{
+			PyObject* pReturn = PyMapping_GetItemString(py_obj->object, attr);
+			if (pReturn)
+			{
+				PyLua_PythonToLua(L, pReturn);
+				Py_DECREF(pReturn);
+				return 1;
+			}
+		}
+		else if (PySequence_Check(py_obj->object))
+		{
+			long long i = atoll(attr);
+			PyObject* pReturn = PySequence_GetItem(py_obj->object, i);
+			if (pReturn)
+			{
+				PyLua_PythonToLua(L, pReturn);
+				Py_DECREF(pReturn);
+				return 1;
+			}
+		}
 	}
 
 	return raise_error(L, "Error: Occurred when getting Python Object attribute");
@@ -555,7 +516,6 @@ static int get_pythonobj_wrapper(lua_State* L)
 
 static int str_pythonobj_wrapper(lua_State* L)
 {
-	//lua_getfield(L, 1, "__python");
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, 1);
 
 	PyObject* pReturn = PyObject_Str(py_obj->object);
@@ -575,7 +535,6 @@ static int str_pythonobj_wrapper(lua_State* L)
 
 static int call_pythonobj_wrapper(lua_State* L)
 {
-	//lua_getfield(L, 1, "__python");
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, 1);
 
 	int args_count = lua_gettop(L) - 1;
