@@ -24,6 +24,12 @@ function Rectangle:get_area()
     return self.area
 end
 
+function Rectangle:other(a, b, c)
+    lu.assertEquals(a, 2)
+    lu.assertEquals(b, 3)
+    lu.assertEquals(c, false)
+end
+
 function Rectangle:__add(other)
     if type(other) == "table" then
         return Rectangle:new(self.length + other.length, self.breadth + other.breadth)
@@ -167,6 +173,7 @@ function test_classes_python()
     local tmp = py_module.Circle(10)
     lu.assertEquals(tmp.radius, 10)
     lu.assertEquals(tmp.get_area(), 314)
+    lu.assertEquals(tmp.other(1, 2), nil)
 end
 
 function test_python_method()

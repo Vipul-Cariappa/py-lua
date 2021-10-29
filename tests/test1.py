@@ -6,6 +6,10 @@ class Circle:
         self.area = self.radius * self.radius * 3.14
         return self.area
 
+    def other(self, a, b):
+        assert a == 1
+        assert b == 2
+
     def __add__(self, other):
         if isinstance(other, Circle):
             return Circle(self.radius + other.radius)
@@ -103,6 +107,7 @@ def insert_new(obj):
 
 def test_lua_class(rect):
     r = rect(4, 6)
+    r.other(2, 3, False)
     assert r.get_area() == 24
     assert r.length == 4
     assert r.breadth == 6
