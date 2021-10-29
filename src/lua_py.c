@@ -34,13 +34,15 @@ static int raise_error(lua_State* L, const char* msg)
 
 	size_t err_max = 1024;
 
-	char* err_msg = malloc(err_max);
+	char* _err_msg = malloc(err_max);
+	char* err_msg = _err_msg;
+
 	if (!err_msg)
 	{
 		LUA_MEMORY_ERROR(L);
 	}
 
-	if (snprintf(err_msg, err_max, "%s\n\nPython Traceback:\n", msg) < 0)
+	if ((err_msg += snprintf(err_msg, err_max, "%s\n\nPython Traceback:\n", msg)) < 0)
 	{
 		LUA_MEMORY_ERROR(L);
 	}
@@ -75,21 +77,23 @@ static int raise_error(lua_State* L, const char* msg)
 				LUA_MEMORY_ERROR(L);
 			}
 
-			if (snprintf(err_msg, err_max, "%s", traceback_msg) < 0)
+			if ((err_msg += snprintf(err_msg, err_max, "%s", traceback_msg)) < 0)
 			{
 				err_max *= 4;
-				char* tmp = realloc(err_msg, err_max);
+				err_msg = err_msg - _err_msg;
+				char* tmp = realloc(_err_msg, err_max);
 
 				if (tmp)
 				{
-					err_msg = tmp;
+					_err_msg = tmp;
+					err_msg = _err_msg + (int)err_msg;
 				}
 				else
 				{
 					LUA_MEMORY_ERROR(L);
 				}
 
-				if (snprintf(err_msg, err_max, "%s", traceback_msg) < 0)
+				if ((err_msg += snprintf(err_msg, err_max, "%s", traceback_msg)) < 0)
 				{
 					LUA_MEMORY_ERROR(L);
 				}
@@ -120,30 +124,27 @@ static int raise_error(lua_State* L, const char* msg)
 
 	if (snprintf(err_msg, err_max, "%s", err_name) < 0)
 	{
-		err_max *= 2;
-		char* tmp = realloc(err_msg, err_max);
+		err_max *= 4;
+		err_msg = err_msg - _err_msg;
+		char* tmp = realloc(_err_msg, err_max);
 
 		if (tmp)
 		{
-			err_msg = tmp;
+			_err_msg = tmp;
+			err_msg = _err_msg + (int)err_msg;
 		}
 		else
 		{
 			LUA_MEMORY_ERROR(L);
 		}
 
-		if (!err_msg)
-		{
-			LUA_MEMORY_ERROR(L);
-		}
-
-		if (snprintf(err_msg, err_max, "%s", err_name) < 0)
+		if ((err_msg += snprintf(err_msg, err_max, "%s", err_name)) < 0)
 		{
 			LUA_MEMORY_ERROR(L);
 		}
 	}
 
-	lua_pushstring(L, err_msg);
+	lua_pushstring(L, _err_msg);
 
 	Py_XDECREF(pExcType);
 	Py_XDECREF(pExcValue);
@@ -152,7 +153,7 @@ static int raise_error(lua_State* L, const char* msg)
 	Py_XDECREF(str_exc_value);
 	Py_XDECREF(pExcValueStr);
 
-	free(err_msg);
+	free(_err_msg);
 	free(err_name);
 	free(new_strExcValue);
 
