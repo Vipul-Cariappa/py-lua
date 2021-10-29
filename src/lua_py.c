@@ -756,6 +756,8 @@ int luaopen_pylua(lua_State* L)
 	lua_setglobal(L, "Python");
 
 	luaL_newlib(L, PY_Call_Wrapper);
+	lua_pushboolean(L, 1);
+	lua_setfield(L, -2, "__python");
 	lua_setglobal(L, "PythonClassWrapper");
 
 	return 1;

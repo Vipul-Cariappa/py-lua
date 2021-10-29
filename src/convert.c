@@ -84,6 +84,7 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
 		{
 			py_callable->function = pItem;
 			lua_pushcclosure(L, call_PyFunc, 1);
+			Py_INCREF(pItem);
 			return_value = 1;
 		}
 		else
@@ -117,6 +118,8 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
 			}
 		}
 		Py_DECREF(pKeyList);
+		
+		return_value = 1;
 
 	}
 	else if (PyList_Check(pItem))
@@ -135,6 +138,8 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
 			lua_seti(L, -2, (lua_Integer)i + 1);
 		}
 
+		return_value = 1;
+
 	}
 	else if (PyTuple_Check(pItem))
 	{
@@ -151,6 +156,8 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
 
 			lua_seti(L, -2, (lua_Integer)i + 1);
 		}
+
+		return_value = 1;
 
 	}
 	else if (PySet_Check(pItem))
@@ -175,7 +182,7 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
 
 		Py_DECREF(pSetIter);
 
-		return 1;
+		return_value = 1;
 	}
 	else if (PyIter_Check(pItem))
 	{
@@ -192,9 +199,13 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
 		{
 			return_value = -1;
 		}
+		else
+		{
+			py_iter->iterator = iter;
+			lua_pushcclosure(n, iter_PyGenerator, 1);
+			return_value = 1;
+		}
 
-		py_iter->iterator = iter;
-		lua_pushcclosure(n, iter_PyGenerator, 1);
 
 	}
 	else
@@ -220,12 +231,16 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
 			{
 				return_value = -1;
 			}
+			else 
+			{
+				lua_getglobal(L, "PythonClassWrapper");
+				lua_setmetatable(L, -2);
 
-			lua_getglobal(L, "PythonClassWrapper");
-			lua_setmetatable(L, -2);
+				Py_INCREF(pItem);
+				py_obj->object = pItem;
 
-			Py_INCREF(pItem);
-			py_obj->object = pItem;
+				return_value = 1;
+			}
 		}
 	}
 
@@ -378,18 +393,12 @@ PyObject* PyLua_LuaToPython(lua_State* L, int index)
 	}
 	else if (lua_type(L, index) == LUA_TUSERDATA && lua_getmetatable(L, index))
 	{
-		lua_pop(L, 1);
-		PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, index);
-
-		if ((lua_getmetatable(L, index) == LUA_TTABLE))
+		if (lua_getfield(L, -1, "__python") == LUA_TBOOLEAN)
 		{
-			if (lua_getfield(L, -1, "__python") == LUA_TBOOLEAN)
-			{
-				lua_pop(L, 2);
-				pReturn = py_obj->object;
-			}
-			lua_pop(L, 1);
+			PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, index);
+			pReturn = py_obj->object;
 		}
+		lua_pop(L, 2);
 
 	}
 
