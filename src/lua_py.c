@@ -174,6 +174,9 @@ static int binary_base_pyobj_wrapper(lua_State* L, binary_op func)
 	}
 
 	PyObject* pReturn = func(py_obj->object, other);
+
+	Py_DECREF(other);
+
 	if (pReturn)
 	{
 		if (PyLua_PythonToLua(L, pReturn) < 0)
@@ -185,7 +188,7 @@ static int binary_base_pyobj_wrapper(lua_State* L, binary_op func)
 		return 1;
 	}
 
-	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+	return raise_error(L, "Error:  python error");
 }
 
 
@@ -222,9 +225,9 @@ int call_PyFunc(lua_State* L)
 		{
 			if (PyLua_PythonToLua(L, pResult) < 0)
 			{
+				Py_DECREF(pResult);
 				return raise_error(L, "Error: While converting from Python to Lua");
 			}
-			
 			Py_DECREF(pResult);
 
 			return 1;
@@ -237,8 +240,7 @@ int call_PyFunc(lua_State* L)
 }
 
 
-int iter_PyGenerator(lua_State* L, ...)
-// write big comment explaing the reason behind ...
+int iter_PyGenerator(lua_State* L)
 {
 	PyLua_PyIterator* py_iter = (PyLua_PyIterator*)lua_touserdata(L, lua_upvalueindex(1));
 
@@ -247,6 +249,7 @@ int iter_PyGenerator(lua_State* L, ...)
 	{
 		if (PyLua_PythonToLua(L, pItem) < 0)
 		{
+			Py_DECREF(pItem);
 			return raise_error(L, "Error: While converting from Python to Lua");
 		}
 		Py_DECREF(pItem);
@@ -299,9 +302,11 @@ static int pow_pythonobj_wrapper(lua_State* L)
 	}
 
 	PyObject* pReturn = PyNumber_Power(py_obj->object, other, Py_None);
+
+	Py_DECREF(other);
+
 	if (pReturn)
 	{
-		PyLua_PythonToLua(L, pReturn);
 		if (PyLua_PythonToLua(L, pReturn) < 0)
 		{
 			Py_DECREF(pReturn);
@@ -311,7 +316,7 @@ static int pow_pythonobj_wrapper(lua_State* L)
 		return 1;
 	}
 
-	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+	return raise_error(L, "Error:  python error");
 }
 
 static int mod_pythonobj_wrapper(lua_State* L)
@@ -355,6 +360,9 @@ static int eq_pythonobj_wrapper(lua_State* L)
 	}
 
 	PyObject* pReturn = PyObject_RichCompare(py_obj->object, other, 2);
+
+	Py_DECREF(other);
+
 	if (pReturn)
 	{
 		if (PyLua_PythonToLua(L, pReturn) < 0)
@@ -366,7 +374,7 @@ static int eq_pythonobj_wrapper(lua_State* L)
 		return 1;
 	}
 
-	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+	return raise_error(L, "Error: python error");
 }
 
 static int lt_pythonobj_wrapper(lua_State* L)
@@ -380,6 +388,9 @@ static int lt_pythonobj_wrapper(lua_State* L)
 	}
 
 	PyObject* pReturn = PyObject_RichCompare(py_obj->object, other, 0);
+
+	Py_DECREF(other);
+
 	if (pReturn)
 	{
 		if (PyLua_PythonToLua(L, pReturn) < 0)
@@ -391,7 +402,7 @@ static int lt_pythonobj_wrapper(lua_State* L)
 		return 1;
 	}
 
-	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+	return raise_error(L, "Error:  python error");
 }
 
 static int le_pythonobj_wrapper(lua_State* L)
@@ -405,6 +416,9 @@ static int le_pythonobj_wrapper(lua_State* L)
 	}
 
 	PyObject* pReturn = PyObject_RichCompare(py_obj->object, other, 1);
+
+	Py_DECREF(other);
+
 	if (pReturn)
 	{
 		if (PyLua_PythonToLua(L, pReturn) < 0)
@@ -416,7 +430,7 @@ static int le_pythonobj_wrapper(lua_State* L)
 		return 1;
 	}
 
-	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+	return raise_error(L, "Error:  python error");
 }
 
 static int len_pythonobj_wrapper(lua_State* L)
@@ -430,7 +444,7 @@ static int len_pythonobj_wrapper(lua_State* L)
 		return 1;
 	}
 
-	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+	return raise_error(L, "Error:  python error");
 }
 
 static int neg_pythonobj_wrapper(lua_State* L)
@@ -449,7 +463,7 @@ static int neg_pythonobj_wrapper(lua_State* L)
 		return 1;
 	}
 
-	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+	return raise_error(L, "Error:  python error");
 }
 
 static int bnot_pythonobj_wrapper(lua_State* L)
@@ -468,7 +482,7 @@ static int bnot_pythonobj_wrapper(lua_State* L)
 		return 1;
 	}
 
-	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+	return raise_error(L, "Error:  python error");
 }
 
 
@@ -479,7 +493,6 @@ static int get_pythonobj_wrapper(lua_State* L)
 	// attribute to string
 	const char* attr = lua_tostring(L, 2);
 
-	PyObject* other = PyLua_LuaToPython(L, 2);
 	PyObject* pReturn = PyObject_GetAttrString(py_obj->object, attr);
 	if (pReturn)
 	{
@@ -520,18 +533,27 @@ static int str_pythonobj_wrapper(lua_State* L)
 	PyLua_PyObject* py_obj = (PyLua_PyObject*)lua_touserdata(L, 1);
 
 	PyObject* pReturn = PyObject_Str(py_obj->object);
-	PyObject* encodedString = PyUnicode_AsEncodedString(pReturn, "UTF-8", "strict");
-	if (encodedString)
+	if (pReturn)
 	{
-		const char* result = PyBytes_AsString(encodedString);
-		if (result) {
-			lua_pushstring(L, result);
+		PyObject* encodedString = PyUnicode_AsEncodedString(pReturn, "UTF-8", "strict");
+		if (encodedString)
+		{
+			const char* result = PyBytes_AsString(encodedString);
+			if (result) {
+				lua_pushstring(L, result);
+			}
+			Py_DECREF(encodedString);
 		}
-		Py_DECREF(encodedString);
+		else
+		{
+			return raise_error(L, "Error: python error");
+		}
+		
+		Py_DECREF(pReturn);
+		return 1;
 	}
-	Py_DECREF(pReturn);
 
-	return 1;
+	return raise_error(L, "Error: python error");
 }
 
 static int call_pythonobj_wrapper(lua_State* L)
@@ -541,6 +563,11 @@ static int call_pythonobj_wrapper(lua_State* L)
 	int args_count = lua_gettop(L) - 1;
 
 	PyObject* pArgs = PyTuple_New(args_count);
+
+	if (!pArgs)
+	{
+		return raise_error(L, "Error: memory error");
+	}
 
 	for (int i = 0, j = 2; i < args_count; i++, j++)
 	{
@@ -558,7 +585,7 @@ static int call_pythonobj_wrapper(lua_State* L)
 		return 1;
 	}
 
-	return raise_error(L, "Error: Occurred when getting Python Object attribute");
+	return raise_error(L, "Error: python error");
 }
 
 static int gc_pythonobj_wrapper(lua_State* L)
