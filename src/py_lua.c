@@ -8,6 +8,21 @@ static PyObject* LuaError;
 extern lua_State* cL;
 
 
+static PyObject* raise_error(char* msg)
+{
+	if (PyErr_Occurred())
+	{
+		// TODO:
+		// if already error is occured
+		// add a new frame with the following
+		// PyErr_SetString(LuaError, msg);
+		return NULL;
+	}
+
+	PyErr_SetString(LuaError, msg);
+	return NULL;
+}
+
 static PyObject* create_return(lua_State* L, int len)
 {
 	SAVE_STACK_SIZE(L);
@@ -22,6 +37,10 @@ static PyObject* create_return(lua_State* L, int len)
 	else if (len == 1)
 	{
 		pReturn = PyLua_LuaToPython(L, -1);
+		if (!pReturn)
+		{
+			return raise_error("While converting from Lua to Python");
+		}
 	}
 	else
 	{
@@ -30,7 +49,12 @@ static PyObject* create_return(lua_State* L, int len)
 
 		for (int i = tmp - len, j = 0; i <= tmp; i++, j++)
 		{
-			PyTuple_SetItem(pReturn, j, PyLua_LuaToPython(L, i));
+			PyObject* pItem = PyLua_LuaToPython(L, i);
+			if (!pItem)
+			{
+				return raise_error("While converting from Lua to Python");
+			}
+			PyTuple_SetItem(pReturn, j, pItem);
 		}
 	}
 
@@ -138,7 +162,6 @@ static PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwa
 		return NULL;
 	}
 
-	// make sure size of stact is the same at exit
 	int stack_size = lua_gettop(cL);
 
 	// ensure space for all operations
@@ -152,7 +175,15 @@ static PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwa
 	// convert python variables to lua type
 	for (int i = 0; i < arg_len; i++)
 	{
-		PyLua_PythonToLua(cL, PyTuple_GetItem(args, i));
+		PyObject* pItem = PyTuple_GetItem(args, i);
+		if (!pItem)
+		{
+			return raise_error("error should have occured");
+		}
+		if (PyLua_PythonToLua(cL, pItem) < 0)
+		{
+			return raise_error("While converting from Python to Lua");
+		}
 	}
 
 	// execute function
@@ -218,9 +249,6 @@ static PyObject* operation_LuaTable_base(PyLua_LuaTable* self, PyObject* other, 
 {
 	PyObject* pReturn;
 
-	// stack size matching
-	int stack_size = lua_gettop(cL);
-
 	// get table
 	lua_pushvalue(cL, LUA_REGISTRYINDEX);
 	lua_pushnil(cL); // placeholder for function (method)
@@ -231,7 +259,10 @@ static PyObject* operation_LuaTable_base(PyLua_LuaTable* self, PyObject* other, 
 	lua_replace(cL, -3);
 
 	// get other element
-	PyLua_PythonToLua(cL, other);
+	if (PyLua_PythonToLua(cL, other) < 0)
+	{
+		return raise_error("While converting from Python to Lua");
+	}
 
 	// call function
 	if (lua_pcall(cL, 2, 1, 0) != LUA_OK)
@@ -245,6 +276,12 @@ static PyObject* operation_LuaTable_base(PyLua_LuaTable* self, PyObject* other, 
 	}
 
 	pReturn = PyLua_LuaToPython(cL, -1);
+	
+	if (!pReturn)
+	{
+		return raise_error("While converting from Lua to Python");
+	}
+
 	lua_pop(cL, 2);	// result and registry
 
 	CHECK_STACK_ZERO(cL);
@@ -258,6 +295,11 @@ static PyObject* getelem_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* pKey)
 
 	// to string
 	PyObject* pStr = PyObject_Str(pKey);
+	if (!pStr)
+	{
+		return raise_error("python str function error");
+	}
+
 	PyObject* encodedString = PyUnicode_AsEncodedString(pKey, "UTF-8", "strict");
 	const char* key_str = NULL;
 
@@ -267,9 +309,12 @@ static PyObject* getelem_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* pKey)
 		key_str = PyBytes_AsString(encodedString);
 		if (!key_str)
 		{
-			// raise error
-			return NULL;
+			return raise_error("memroy error");
 		}
+	}
+	else
+	{
+		return raise_error("memroy error");
 	}
 
 	// get table
@@ -279,6 +324,10 @@ static PyObject* getelem_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* pKey)
 	// get item
 	lua_getfield(cL, -1, key_str);
 	pReturn = PyLua_LuaToPython(cL, -1);
+	if (!pReturn)
+	{
+		return raise_error("While converting from Lua to Python");
+	}
 
 	lua_pop(cL, 3);
 
@@ -293,6 +342,11 @@ static int setelem_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* pKey, PyObje
 {
 	// to string
 	PyObject* pStr = PyObject_Str(pKey);
+	if (!pStr)
+	{
+		return raise_error("python str function error");
+	}
+
 	PyObject* encodedString = PyUnicode_AsEncodedString(pKey, "UTF-8", "strict");
 	const char* key_str = NULL;
 
@@ -302,9 +356,13 @@ static int setelem_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* pKey, PyObje
 		key_str = PyBytes_AsString(encodedString);
 		if (!key_str)
 		{
-			// raise error
+			raise_error("memroy error");
 			return -1;
 		}
+	}
+	else
+	{
+		return raise_error("memroy error");
 	}
 
 	// get table
@@ -319,7 +377,15 @@ static int setelem_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* pKey, PyObje
 		lua_setfield(cL, -2, key_str);
 	}
 
-	PyLua_PythonToLua(cL, pValue);
+	if (PyLua_PythonToLua(cL, pValue) < 0)
+	{
+		raise_error("While converting from Python to Lua");
+
+		Py_DECREF(pStr);
+		Py_DECREF(encodedString);
+		return -1;
+	}
+
 	lua_setfield(cL, -2, key_str);
 
 	lua_pop(cL, 2);
@@ -372,6 +438,11 @@ static PyObject* getattr_LuaInstance_Wrapper(PyLua_LuaTable* self, char* attr)
 	if (lua_type(cL, -1) != LUA_TFUNCTION)
 	{
 		pReturn = PyLua_LuaToPython(cL, -1);
+		if (!pReturn)
+		{
+			return raise_error("While converting from Lua to Python");
+		}
+
 		lua_pop(cL, 3);
 	}
 	// else wrap it around wrapper_around_method function and set closures values to be.
@@ -379,6 +450,10 @@ static PyObject* getattr_LuaInstance_Wrapper(PyLua_LuaTable* self, char* attr)
 	{
 		lua_pushcclosure(cL, wrapper_around_method, 2);
 		pReturn = PyLua_LuaToPython(cL, -1);
+		if (!pReturn)
+		{
+			return raise_error("While converting from Lua to Python");
+		}
 		lua_pop(cL, 2);
 	}
 
@@ -401,7 +476,11 @@ static int setattr_LuaInstance_Wrapper(PyLua_LuaTable* self, char* attr, PyObjec
 		lua_setfield(cL, -2, attr);
 	}
 
-	PyLua_PythonToLua(cL, pValue);
+	if (PyLua_PythonToLua(cL, pValue) < 0)
+	{
+		return raise_error("While converting from Lua to Python");
+	}
+
 	lua_setfield(cL, -2, attr);
 
 	lua_pop(cL, 2);
@@ -436,7 +515,17 @@ static PyObject* call_LuaInstance_Wrapper(PyLua_LuaTable* self, PyObject* args, 
 
 	for (int i = 0; i < arg_len; i++)
 	{
-		PyLua_PythonToLua(cL, PyTuple_GetItem(args, i));
+		PyObject* pItem = PyTuple_GetItem(args, i);
+		if (!pItem)
+		{
+			return raise_error("error should have occured");
+		}
+
+		if (PyLua_PythonToLua(cL, pItem) < 0)
+		{
+			return raise_error("While converting from Python to Lua");
+		}
+
 	}
 
 	// call function
@@ -449,6 +538,11 @@ static PyObject* call_LuaInstance_Wrapper(PyLua_LuaTable* self, PyObject* args, 
 	}
 
 	pReturn = PyLua_LuaToPython(cL, -1);
+	if (!pReturn)
+	{
+		return raise_error("While converting from Lua to Python");
+	}
+
 	lua_pop(cL, 2); // result and registry
 
 	CHECK_STACK_ZERO(cL);
@@ -626,7 +720,10 @@ static PyObject* call_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* args, PyO
 
 	for (int i = 0; i < arg_len; i++)
 	{
-		PyLua_PythonToLua(cL, PyTuple_GetItem(args, i));
+		if (PyLua_PythonToLua(cL, PyTuple_GetItem(args, i)) < 0)
+		{
+			return raise_error("While converting from Python to Lua");
+		}
 	}
 
 	// call function
@@ -639,6 +736,10 @@ static PyObject* call_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* args, PyO
 	}
 
 	pReturn = PyLua_LuaToPython(cL, -1);
+	if (!pReturn)
+	{
+		return raise_error("While converting from Lua to Python");
+	}
 	lua_pop(cL, 2); // result and registry
 
 	CHECK_STACK_ZERO(cL);
