@@ -52,7 +52,10 @@ print(pymodule.concatenate("Lua loves ", "Python"))
 -- Lua loves Python
 
 rect = pymodule.Rectangle(4, 6)
+print(rect.get_area())
+-- 24
 print(tostring(rect))
+-- Rectangle(x=4.0, y=6.0)
 
 ```
 
