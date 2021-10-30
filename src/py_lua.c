@@ -39,7 +39,7 @@ static PyObject* create_return(lua_State* L, int len)
 		pReturn = PyLua_LuaToPython(L, -1);
 		if (!pReturn)
 		{
-			return raise_error("While converting from Lua to Python");
+			return raise_error(PERR_CONVERT_LUA_TO_PY);
 		}
 	}
 	else
@@ -52,7 +52,7 @@ static PyObject* create_return(lua_State* L, int len)
 			PyObject* pItem = PyLua_LuaToPython(L, i);
 			if (!pItem)
 			{
-				return raise_error("While converting from Lua to Python");
+				return raise_error(PERR_CONVERT_LUA_TO_PY);
 			}
 			PyTuple_SetItem(pReturn, j, pItem);
 		}
@@ -119,9 +119,7 @@ static PyObject* next_LuaCoroutine(PyLua_LuaFunc* self)
 	}
 	else
 	{
-		//return luaL_error(L, "Error: While calling the lua function.");
-
-		PyErr_Format(LuaError, "\nError raise while executing lua\nLua Traceback:\n %s\n", lua_tostring(cL, -1));
+		PyErr_Format(LuaError, ERR_CALL_LUA, lua_tostring(cL, -1));
 		return NULL;
 	}
 
@@ -137,7 +135,8 @@ static PyObject* iter_LuaCoroutine(PyLua_LuaFunc* self)
 {
 	if (!self->is_luathread)
 	{
-		PyErr_SetString(LuaError, "Not a lua thread");
+		// TODO: change msg to "expected lua thread but got x"
+		PyErr_Format(PyExc_TypeError, "Not a Lua Thread");
 		return NULL;
 	}
 
@@ -151,14 +150,14 @@ static PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwa
 	if (self->is_luathread)
 	{
 		// raise error
-		PyErr_SetString(LuaError, "Can not call lua thread type");
+		PyErr_SetString(PyExc_TypeError, "Lua Thread Type is not Callable");
 		return NULL;
 	}
 
 	if (kwargs)
 	{
 		// raise error
-		PyErr_SetString(LuaError, "Lua function does not accept keyword arguments");
+		PyErr_SetString(LuaError, PERR_KWARG_LUA);
 		return NULL;
 	}
 
@@ -182,7 +181,7 @@ static PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwa
 		}
 		if (PyLua_PythonToLua(cL, pItem) < 0)
 		{
-			return raise_error("While converting from Python to Lua");
+			return raise_error(PERR_CONVERT_PY_TO_LUA);
 		}
 	}
 
@@ -191,7 +190,7 @@ static PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwa
 	{
 		//return luaL_error(L, "Error: While calling the lua function.");
 
-		PyErr_Format(LuaError, "\nError raise while executing lua\nLua Traceback:\n %s\n", lua_tostring(cL, -1));
+		PyErr_Format(LuaError, ERR_CALL_LUA, lua_tostring(cL, -1));
 		return NULL;
 	}
 
@@ -222,7 +221,7 @@ static PyObject* get_LuaFunc_Wrapper(PyLua_LuaFunc* self, PyObject* args, PyObje
 	if (kwargs)
 	{
 		// raise error
-		PyErr_SetString(LuaError, "Lua function does not accept keyword arguments");
+		PyErr_SetString(LuaError, PERR_KWARG_LUA);
 		return NULL;
 	}
 
@@ -231,6 +230,7 @@ static PyObject* get_LuaFunc_Wrapper(PyLua_LuaFunc* self, PyObject* args, PyObje
 
 	if (!PyArg_ParseTuple(args, "ii", &index, &is_luathread))
 	{
+		// TODO: change msg to "Expected x, y but got z"
 		PyErr_SetString(LuaError, "Got wrong arguments to get_LuaFunc_Wrapper");
 		return NULL;
 	}
@@ -238,8 +238,6 @@ static PyObject* get_LuaFunc_Wrapper(PyLua_LuaFunc* self, PyObject* args, PyObje
 	self->index = index;
 	self->is_luathread = is_luathread;
 	self->thread_terminated = 0;
-
-	//CHECK_STACK_ZERO(cL);
 
 	return 0;
 }
@@ -261,17 +259,15 @@ static PyObject* operation_LuaTable_base(PyLua_LuaTable* self, PyObject* other, 
 	// get other element
 	if (PyLua_PythonToLua(cL, other) < 0)
 	{
-		return raise_error("While converting from Python to Lua");
+		return raise_error(PERR_CONVERT_PY_TO_LUA);
 	}
 
 	// call function
 	if (lua_pcall(cL, 2, 1, 0) != LUA_OK)
 	{
-		//return luaL_error(L, "Error: While calling the lua function.");
-
 		//TODO: manage stack before raising error
 
-		PyErr_Format(LuaError, "\nError raise while executing lua\nLua Traceback:\n %s\n", lua_tostring(cL, -1));
+		PyErr_Format(LuaError, ERR_CALL_LUA, lua_tostring(cL, -1));
 		return NULL;
 	}
 
@@ -279,7 +275,7 @@ static PyObject* operation_LuaTable_base(PyLua_LuaTable* self, PyObject* other, 
 	
 	if (!pReturn)
 	{
-		return raise_error("While converting from Lua to Python");
+		return raise_error(PERR_CONVERT_LUA_TO_PY);
 	}
 
 	lua_pop(cL, 2);	// result and registry
@@ -297,7 +293,7 @@ static PyObject* getelem_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* pKey)
 	PyObject* pStr = PyObject_Str(pKey);
 	if (!pStr)
 	{
-		return raise_error("python str function error");
+		return raise_error("error should have occured");
 	}
 
 	PyObject* encodedString = PyUnicode_AsEncodedString(pKey, "UTF-8", "strict");
@@ -309,12 +305,12 @@ static PyObject* getelem_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* pKey)
 		key_str = PyBytes_AsString(encodedString);
 		if (!key_str)
 		{
-			return raise_error("memroy error");
+			return raise_error("error should have occured: memroy error");
 		}
 	}
 	else
 	{
-		return raise_error("memroy error");
+		return raise_error("error should have occured: memroy error");
 	}
 
 	// get table
@@ -326,7 +322,7 @@ static PyObject* getelem_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* pKey)
 	pReturn = PyLua_LuaToPython(cL, -1);
 	if (!pReturn)
 	{
-		return raise_error("While converting from Lua to Python");
+		return raise_error(PERR_CONVERT_LUA_TO_PY);
 	}
 
 	lua_pop(cL, 3);
@@ -344,7 +340,7 @@ static int setelem_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* pKey, PyObje
 	PyObject* pStr = PyObject_Str(pKey);
 	if (!pStr)
 	{
-		return raise_error("python str function error");
+		return raise_error("error should have occured");
 	}
 
 	PyObject* encodedString = PyUnicode_AsEncodedString(pKey, "UTF-8", "strict");
@@ -356,13 +352,13 @@ static int setelem_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* pKey, PyObje
 		key_str = PyBytes_AsString(encodedString);
 		if (!key_str)
 		{
-			raise_error("memroy error");
+			raise_error("error should have occured: memroy error");
 			return -1;
 		}
 	}
 	else
 	{
-		return raise_error("memroy error");
+		return raise_error("error should have occured: memroy error");
 	}
 
 	// get table
@@ -379,7 +375,7 @@ static int setelem_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* pKey, PyObje
 
 	if (PyLua_PythonToLua(cL, pValue) < 0)
 	{
-		raise_error("While converting from Python to Lua");
+		raise_error(PERR_CONVERT_PY_TO_LUA);
 
 		Py_DECREF(pStr);
 		Py_DECREF(encodedString);
@@ -411,9 +407,7 @@ static int wrapper_around_method(lua_State* L)
 	// execute function
 	if (lua_pcall(L, stack_size + 1, LUA_MULTRET, 0) != LUA_OK)
 	{
-		//return luaL_error(L, "Error: While calling the lua function.");
-
-		PyErr_Format(LuaError, "\nError raise while executing lua\nLua Traceback:\n %s\n", lua_tostring(cL, -1));
+		PyErr_Format(LuaError, ERR_CALL_LUA, lua_tostring(cL, -1));
 		return NULL;
 	}
 
@@ -440,7 +434,7 @@ static PyObject* getattr_LuaInstance_Wrapper(PyLua_LuaTable* self, char* attr)
 		pReturn = PyLua_LuaToPython(cL, -1);
 		if (!pReturn)
 		{
-			return raise_error("While converting from Lua to Python");
+			return raise_error(PERR_CONVERT_LUA_TO_PY);
 		}
 
 		lua_pop(cL, 3);
@@ -452,7 +446,7 @@ static PyObject* getattr_LuaInstance_Wrapper(PyLua_LuaTable* self, char* attr)
 		pReturn = PyLua_LuaToPython(cL, -1);
 		if (!pReturn)
 		{
-			return raise_error("While converting from Lua to Python");
+			return raise_error(PERR_CONVERT_LUA_TO_PY);
 		}
 		lua_pop(cL, 2);
 	}
@@ -478,7 +472,7 @@ static int setattr_LuaInstance_Wrapper(PyLua_LuaTable* self, char* attr, PyObjec
 
 	if (PyLua_PythonToLua(cL, pValue) < 0)
 	{
-		return raise_error("While converting from Lua to Python");
+		return raise_error(PERR_CONVERT_LUA_TO_PY);
 	}
 
 	lua_setfield(cL, -2, attr);
@@ -495,7 +489,7 @@ static PyObject* call_LuaInstance_Wrapper(PyLua_LuaTable* self, PyObject* args, 
 	if (kwargs)
 	{
 		// raise error
-		PyErr_SetString(LuaError, "Lua function does not accept keyword arguments");
+		PyErr_SetString(LuaError, PERR_KWARG_LUA);
 		return NULL;
 	}
 
@@ -523,7 +517,7 @@ static PyObject* call_LuaInstance_Wrapper(PyLua_LuaTable* self, PyObject* args, 
 
 		if (PyLua_PythonToLua(cL, pItem) < 0)
 		{
-			return raise_error("While converting from Python to Lua");
+			return raise_error(PERR_CONVERT_PY_TO_LUA);
 		}
 
 	}
@@ -531,16 +525,14 @@ static PyObject* call_LuaInstance_Wrapper(PyLua_LuaTable* self, PyObject* args, 
 	// call function
 	if (lua_pcall(cL, arg_len + 1, 1, 0) != LUA_OK)
 	{
-		//return luaL_error(L, "Error: While calling the lua function.");
-
-		PyErr_Format(LuaError, "\nError raise while executing lua\nLua Traceback:\n %s\n", lua_tostring(cL, -1));
+		PyErr_Format(LuaError, ERR_CALL_LUA, lua_tostring(cL, -1));
 		return NULL;
 	}
 
 	pReturn = PyLua_LuaToPython(cL, -1);
 	if (!pReturn)
 	{
-		return raise_error("While converting from Lua to Python");
+		return raise_error(PERR_CONVERT_LUA_TO_PY);
 	}
 
 	lua_pop(cL, 2); // result and registry
@@ -711,6 +703,7 @@ static PyObject* call_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* args, PyO
 	lua_rawgeti(cL, -2, self->index);
 
 	// get initialiser
+	// TODO: use optional kwargs if initializer function is not called "new"
 	lua_getfield(cL, -1, "new");
 	lua_replace(cL, stack_size + 2);
 
@@ -722,23 +715,21 @@ static PyObject* call_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* args, PyO
 	{
 		if (PyLua_PythonToLua(cL, PyTuple_GetItem(args, i)) < 0)
 		{
-			return raise_error("While converting from Python to Lua");
+			return raise_error(PERR_CONVERT_PY_TO_LUA);
 		}
 	}
 
 	// call function
 	if (lua_pcall(cL, arg_len + 1, 1, 0) != LUA_OK)
 	{
-		//return luaL_error(L, "Error: While calling the lua function.");
-
-		PyErr_Format(LuaError, "\nError raise while executing lua\nLua Traceback:\n %s\n", lua_tostring(cL, -1));
+		PyErr_Format(LuaError, ERR_CALL_PY, lua_tostring(cL, -1));
 		return NULL;
 	}
 
 	pReturn = PyLua_LuaToPython(cL, -1);
 	if (!pReturn)
 	{
-		return raise_error("While converting from Lua to Python");
+		return raise_error(PERR_CONVERT_LUA_TO_PY);
 	}
 	lua_pop(cL, 2); // result and registry
 
@@ -752,7 +743,7 @@ static PyObject* get_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* args, PyOb
 	if (kwargs)
 	{
 		// raise error
-		PyErr_SetString(LuaError, "Lua function does not accept keyword arguments");
+		PyErr_SetString(LuaError, PERR_KWARG_LUA);
 		return NULL;
 	}
 
