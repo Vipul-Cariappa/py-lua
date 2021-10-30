@@ -16,7 +16,6 @@ end
 
 function Rectangle:__tostring()
     return "Rectangle(length = " .. tostring(self.length) .. ", Breadth = " .. tostring(self.breadth) .. ")"
-    -- return "Rectangle"
 end
 
 function Rectangle:get_area()
@@ -185,5 +184,4 @@ function test_python_call()
     lu.assertEquals(py_module.f(), "Call.__call__ function")
 end
 
--- os.exit(lu.LuaUnit.run())
-lu.LuaUnit.run()
+os.exit(lu.LuaUnit.run())
