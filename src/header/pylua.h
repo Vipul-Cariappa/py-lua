@@ -43,8 +43,10 @@
 		#define SAVE_STACK_SIZE(L) size_t _ss = lua_gettop((L))
 		#define CHECK_STACK_SIZE(L, inc) assert((_ss + (inc)) == lua_gettop((L)))
 		#define CHECK_STACK_ZERO(L) assert(lua_gettop((L)) == 0)
+	#else
+		#define SAVE_STACK_SIZE(L)
+		#define CHECK_STACK_SIZE(L, inc)
+		#define CHECK_STACK_ZERO(L)
 	#endif // DEBUG
-
-
 
 #endif // !pylua
