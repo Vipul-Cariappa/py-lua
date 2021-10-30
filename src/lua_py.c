@@ -42,6 +42,7 @@ static int raise_error(lua_State* L, const char* msg)
 	}
 
 	if ((err_msg += snprintf(err_msg, err_max, "%s\n\nPython Traceback:\n", msg)) < 0)
+
 	{
 		LUA_MEMORY_ERROR(L);
 	}

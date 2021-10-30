@@ -17,5 +17,6 @@ project "pylua"
 
    filter "configurations:Release"
       links { "python3.8", "lua5.4" }
+
       defines { "NDEBUG" }
       optimize "On"

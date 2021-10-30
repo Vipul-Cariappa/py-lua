@@ -58,6 +58,14 @@ print(tostring(rect))
 -- Rectangle(x=4.0, y=6.0)
 
 ```
+=======
+## Building
+To compile py-lua. First install the required dependencies:
+- python3
+- lua5.4
+- premake5
+- gcc (linux)
+- Visual Studio Code (windows)
 
 ## Building
 To compile py-lua. First install the required dependencies:
@@ -74,6 +82,7 @@ git clone https://github.com/Vipul-Cariappa/py-lua.git
 ```
 
 Update `premake5.lua` file: Replace `/path/to/python/header` and `/path/to/lua/header` with actual header paths and replace `/path/to/python/shared_libraries` and `/path/to/lua/shared_libraries` with actual paths to shared libraries.
+
 
 After updating paths run premake with desired action:
 ```bash 
