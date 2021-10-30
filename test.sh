@@ -35,4 +35,9 @@ if ! lua test3.lua; then
     exit -1
 fi
 
+printf "\nTest Case 5\n"
+if ! lua test4.lua; then
+    exit -1
+fi
+
 printf "\n\nFinished Running all tests\n"

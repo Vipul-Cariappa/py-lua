@@ -8,6 +8,7 @@ This project has been started to provide easy binding between python and lua pro
 - Convertion between python dict and lua table.
 - Calling and extracting return values of functions with simple data types.
 - Working with python generators and lua threads.
+- Support to use Object Oriented Programming between the languages.
 
 ## Example
 ```python
@@ -23,6 +24,18 @@ def sub(x, y):
 
 def concatenate(x, y):
     return x + y
+
+class Rectangle:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def get_area(self):
+        return self.x * self.y
+
+    def __str__(self):
+        return f"Rectangle(x={self.x}, y={self.y})"
+
 ```
 
 ```lua
@@ -37,7 +50,22 @@ print("e - pi = ", pymodule.sub(pymodule.PI, pymodule.e))
 -- 3.17 - 2.71 = 0.43
 print(pymodule.concatenate("Lua loves ", "Python"))
 -- Lua loves Python
+
+rect = pymodule.Rectangle(4, 6)
+print(rect.get_area())
+-- 24
+print(tostring(rect))
+-- Rectangle(x=4.0, y=6.0)
+
 ```
+=======
+## Building
+To compile py-lua. First install the required dependencies:
+- python3
+- lua5.4
+- premake5
+- gcc (linux)
+- Visual Studio Code (windows)
 
 ## Building
 To compile py-lua. First install the required dependencies:
@@ -45,8 +73,7 @@ To compile py-lua. First install the required dependencies:
 - lua5.4
 - premake5
 - gcc (linux)
-<!-- - Visual Studio Code (windows) -->
-
+- Visual Studio Code (windows)
 
 Clone the repository
 
@@ -54,7 +81,8 @@ Clone the repository
 git clone https://github.com/Vipul-Cariappa/py-lua.git
 ```
 
-Update `premake5.lua` file: Replace `/path/to/python/header` and `/path/to/lua/header` with actual paths.
+Update `premake5.lua` file: Replace `/path/to/python/header` and `/path/to/lua/header` with actual header paths and replace `/path/to/python/shared_libraries` and `/path/to/lua/shared_libraries` with actual paths to shared libraries.
+
 
 After updating paths run premake with desired action:
 ```bash 
@@ -72,7 +100,7 @@ If you face any problems while building please ask for help [here](https://githu
 - [x] Calling python functions from lua
 - [x] Support list, tuple, dict and set
 - [x] Support for generator functions
-- [ ] Support for working with python classes from lua
+- [x] Support for working with python classes from lua
 - [ ] Calling lua from python (lua bindings for python)
 
 ## Contribution

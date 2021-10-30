@@ -1,7 +1,7 @@
 lu = require('luaunit')
 require("pylua")
 
-py_module = Python.PyLoad("test")
+py_module = Python.PyLoad("test0")
 
 
 function test_python_get()
@@ -96,6 +96,7 @@ function test_get_called()
     py_module.get_called(nested)
     py_module.get_called(lua_print)
     py_module.get_called(error_out)
+    py_module.check(lua_print)
 end
 
 os.exit(lu.LuaUnit.run())

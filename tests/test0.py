@@ -78,3 +78,6 @@ def raise_error(*args):
 
 def get_called_notprotected(func):
     func()
+
+def check(func):
+    assert func() == 3.14
