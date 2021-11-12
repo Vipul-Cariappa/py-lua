@@ -1,4 +1,7 @@
 # py-lua
+![workflow](https://github.com/Vipul-Cariappa/py-lua/actions/workflows/build_and_test.yml/badge.svg)
+[![codecov](https://codecov.io/gh/Vipul-Cariappa/py-lua/branch/main/graph/badge.svg?token=LOUBWQJGF9)](https://codecov.io/gh/Vipul-Cariappa/py-lua)
+
 Bridge between Python and Lua.
 This project has been started to provide easy binding between python and lua programming languages. Currently tested with lua version 5.4 and python version 3.8.
 
