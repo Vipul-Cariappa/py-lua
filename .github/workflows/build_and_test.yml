@@ -32,4 +32,4 @@ jobs:
     - name: Upload Code Coverage
       uses: codecov/codecov-action@v1
       with:
-          files: [ obj/Debug/c_string.c.gcov, obj/Debug/lua_py.c.gcov, obj/Debug/py_lua.c.gcov, obj/Debug/convert.c.gcov ]
+          files: obj/Debug/c_string.c.gcov,obj/Debug/lua_py.c.gcov,obj/Debug/py_lua.c.gcov,obj/Debug/convert.c.gcov
