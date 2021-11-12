@@ -13,8 +13,11 @@ project "pylua"
       links { "python3.8", "lua" }
 
    filter "configurations:Debug"
+      buildoptions { "-ftest-coverage", "-fprofile-arcs" }
+      linkoptions { "-lgcov" }
       defines { "DEBUG" }
       symbols "On"
+      optimize "Off"
 
    filter "configurations:Release"
       defines { "NDEBUG" }
