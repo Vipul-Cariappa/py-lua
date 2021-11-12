@@ -28,7 +28,6 @@ jobs:
         gcov -abcfu obj/Debug/lua_py.c
         gcov -abcfu obj/Debug/py_lua.c
         gcov -abcfu obj/Debug/convert.c
-        ls
 
     - name: Upload Code Coverage
       uses: codecov/codecov-action@v1
