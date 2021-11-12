@@ -17,7 +17,19 @@ jobs:
         which python3
         which lua
     - name: Build
-      run: bash build.sh
+      run: bash .github/build.sh
 
     - name: Test
-      run: bash test.sh
+      run: bash .github/test.sh
+
+    - name: Code Coverage
+      run: |
+        gcov -abcfu obj/Debug/c_string.c
+        gcov -abcfu obj/Debug/lua_py.c
+        gcov -abcfu obj/Debug/py_lua.c
+        gcov -abcfu obj/Debug/convert.c
+
+    - name: Upload Code Coverage
+      uses: codecov/codecov-action@v1
+      with:
+          files: [ obj/Debug/c_string.c.gcov, obj/Debug/lua_py.c.gcov, obj/Debug/py_lua.c.gcov, obj/Debug/convert.c.gcov ]
