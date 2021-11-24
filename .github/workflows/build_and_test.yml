@@ -25,7 +25,7 @@ jobs:
           languages: cpp
 
     - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v1
+      uses: github/codeql-action/analyze@v1
 
     - name: Test
       run: bash .github/test.sh
