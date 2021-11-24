@@ -19,6 +19,14 @@ jobs:
     - name: Build
       run: bash .github/build.sh
 
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v1
+      with:
+          languages: cpp
+
+    - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v1
+
     - name: Test
       run: bash .github/test.sh
 
