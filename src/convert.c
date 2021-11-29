@@ -2,9 +2,9 @@
 
 
 // lua_py.c
-PyObject* pPylua_Module;
-PyTypeObject pLuaInstance_Type;
-PyTypeObject pLuaTable_Type;
+extern PyObject* pPylua_Module;
+extern PyTypeObject pLuaInstance_Type;
+extern PyTypeObject pLuaTable_Type;
 int call_PyFunc(lua_State* L);
 int iter_PyGenerator(lua_State* L);
 

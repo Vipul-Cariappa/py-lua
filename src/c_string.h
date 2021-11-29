@@ -1,7 +1,10 @@
+#ifndef CUSTOM_STRING_H
+#define CUSTOM_STRING_H
+
 #include <string.h>
 #include <stdlib.h>
 
-
+/* replaces the string rep from the string orig with the string with */
 char* str_replace(char* orig, char* rep, char* with) {
     char* result; // the return string
     char* ins;    // the next insert point
@@ -27,7 +30,7 @@ char* str_replace(char* orig, char* rep, char* with) {
         ins = tmp + len_rep;
     }
 
-    tmp = result = malloc(strlen(orig) + (len_with - len_rep) * count + 1);
+    tmp = result = (char*)malloc(strlen(orig) + (len_with - len_rep) * count + 1);
 
     if (!result)
         return NULL;
@@ -48,3 +51,5 @@ char* str_replace(char* orig, char* rep, char* with) {
     strcpy(tmp, orig);
     return result;
 }
+
+#endif // CUSTOM_STRING_H

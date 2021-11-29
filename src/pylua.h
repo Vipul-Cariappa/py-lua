@@ -1,14 +1,21 @@
-#define PY_SSIZE_T_CLEAN
+#ifndef PYLUA_H
+#define PYLUA_H
+
 #include <Python.h>
-
 #include <lua.h>
-#include <lauxlib.h>
-#include <lualib.h>
 
-#include <assert.h>
 
-#ifndef pylua
-#define pylua
+// Debug build runtime checks
+#ifdef DEBUG
+#define SAVE_STACK_SIZE(L) size_t _ss = lua_gettop((L))
+#define CHECK_STACK_SIZE(L, inc) assert((_ss + (inc)) == lua_gettop((L)))
+#define CHECK_STACK_ZERO(L) assert(lua_gettop((L)) == 0)
+#else
+#define SAVE_STACK_SIZE(L)
+#define CHECK_STACK_SIZE(L, inc)
+#define CHECK_STACK_ZERO(L)
+#endif // DEBUG
+
 
 #define MEMROY_ERR "Memory Error"
 
@@ -33,21 +40,15 @@
 // TODO: Some way to pass keyword may be required!
 #define PERR_KWARG_LUA "Lua Function does not accept Python Keyword Arguments"
 
-#define LUA_MEMORY_ERROR(L) return luaL_error((L), MEMROY_ERR)
-
-
-#ifdef DEBUG
-#define SAVE_STACK_SIZE(L) size_t _ss = lua_gettop((L))
-#define CHECK_STACK_SIZE(L, inc) assert((_ss + (inc)) == lua_gettop((L)))
-#define CHECK_STACK_ZERO(L) assert(lua_gettop((L)) == 0)
-#else
-#define SAVE_STACK_SIZE(L)
-#define CHECK_STACK_SIZE(L, inc)
-#define CHECK_STACK_ZERO(L)
-#endif // DEBUG
-
+// common
 PyObject* PyLua_LuaToPython(lua_State* L, int index);
 int PyLua_PythonToLua(lua_State* L, PyObject* pItem);
+
+typedef struct PyLua_PyModule {
+	PyObject* module;
+	int number;
+	int loaded;
+} PyLua_PyModule;
 
 typedef struct PyLua_PyFunc {
 	PyObject* function;
@@ -73,6 +74,4 @@ typedef struct PyLua_LuaTable {
 		int index;
 } PyLua_LuaTable;
 
-char* str_replace(char* orig, char* rep, char* with);
-
-#endif // !pylua
+#endif // PYLUA_H

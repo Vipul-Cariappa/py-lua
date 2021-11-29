@@ -58,6 +58,9 @@ pylua.vcxproj
 pylua.vcxproj.filters
 pylua.vcxproj.user
 
+# vscode
+.vscode/
+
 # Python
 __pycache__/
 
@@ -65,6 +68,8 @@ __pycache__/
 _premake5.lua
 tests/pylua.sh
 tests/luaunit.lua
+Makefile
+pylua.make
 tmp*
 bin/
 obj/

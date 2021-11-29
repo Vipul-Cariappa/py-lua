@@ -6,7 +6,7 @@ project "pylua"
    language "C"
    targetdir "bin"
 
-   includedirs { "src/header", "/usr/include/python3.8", "/usr/include/lua5.4" }
+   includedirs { "/usr/include/python3.8", "/usr/include/lua5.4" }
    files { "src/**.h", "src/**.c" }
 
    filter { "system:linux" }
