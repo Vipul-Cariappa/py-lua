@@ -24,10 +24,6 @@
 #define TRACEBACK_STR_LEN 256
 #define EXCEPTION_STR_LEN 256
 
-// declaration in convert.c
-PyObject* PyLua_LuaToPython(lua_State* L, int index);
-int PyLua_PythonToLua(lua_State* L, PyObject* pItem);
-
 
 // declaration in py_lua.c
 PyMODINIT_FUNC PyInit_pylua(void);

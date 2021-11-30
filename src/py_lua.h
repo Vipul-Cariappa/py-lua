@@ -15,15 +15,6 @@
 #include "pylua.h"
 
 
-// declaration in lua_py.c
-extern lua_State* cL;	// TODO: Remove this from global state
-
-
-// declaration in convert.c
-PyObject* PyLua_LuaToPython(lua_State* L, int index);
-int PyLua_PythonToLua(lua_State* L, PyObject* pItem);
-
-
 // declaration here
 static PyTypeObject pLuaFunc_Type;
 PyTypeObject pLuaInstance_Type;		// used elsewhere
