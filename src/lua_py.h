@@ -38,6 +38,9 @@ typedef PyObject* (*binary_op)(PyObject*, PyObject*);   // python binary operato
 typedef PyObject* (*unary_op)(PyObject*);   // python unary operator function
 PyObject* pPylua_Module;    // python's pylua module
 lua_State* cL;              // lua secondary state (thread)
+static const struct luaL_Reg PY_lib[3];
+static const struct luaL_Reg PY_Call_Wrapper[24];
+
 
 
 /* raises error to lua interpreter with gien msg */
@@ -103,7 +106,7 @@ static int raise_error(lua_State* L, const char* msg)
 				if (tmp)
 				{
 					_err_msg = tmp;
-					err_msg = _err_msg + (int)err_msg;
+					err_msg = _err_msg + (long)err_msg;
 				}
 				else
 				{
@@ -148,7 +151,7 @@ static int raise_error(lua_State* L, const char* msg)
 		if (tmp)
 		{
 			_err_msg = tmp;
-			err_msg = _err_msg + (int)err_msg;
+			err_msg = _err_msg + (long)err_msg;
 		}
 		else
 		{
@@ -209,5 +212,44 @@ static int binary_base_pyobj_wrapper(lua_State* L, binary_op func)
 
 	return raise_error(L, ERR_CALL_PY);
 }
+
+
+
+// Python Wrapper functions
+
+int call_PyFunc(lua_State* L);
+int iter_PyGenerator(lua_State* L);
+static int get_PyObj(lua_State* L);
+static int set_PyObj(lua_State* L);
+static int str_PyObj(lua_State* L);
+static int call_PyObj(lua_State* L);
+static int gc_PyObj(lua_State* L);
+static int add_PyObj(lua_State* L);
+static int sub_PyObj(lua_State* L);
+static int mul_PyObj(lua_State* L);
+static int div_PyObj(lua_State* L);
+static int floordiv_PyObj(lua_State* L);
+static int pow_PyObj(lua_State* L);
+static int mod_PyObj(lua_State* L);
+static int lshift_PyObj(lua_State* L);
+static int rshift_PyObj(lua_State* L);
+static int band_PyObj(lua_State* L);
+static int bor_PyObj(lua_State* L);
+static int bxor_PyObj(lua_State* L);
+static int eq_PyObj(lua_State* L);
+static int lt_PyObj(lua_State* L);
+static int le_PyObj(lua_State* L);
+static int len_PyObj(lua_State* L);
+static int neg_PyObj(lua_State* L);
+static int bnot_PyObj(lua_State* L);
+
+
+// Lua Module Functions
+
+static int PyLua_PyLoadModule(lua_State* L);
+static int PyLua_PyUnloadModule(lua_State* L);
+static int PyLua_PySet(lua_State* L);
+static int PyLua_PyGet(lua_State* L);
+
 
 #endif // LUA_PY_H
