@@ -218,8 +218,6 @@ static PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwa
 	// execute function
 	if (lua_pcall(cL, arg_len, LUA_MULTRET, 0) != LUA_OK)
 	{
-		//return luaL_error(L, "Error: While calling the lua function.");
-
 		PyErr_Format(LuaError, ERR_CALL_LUA, lua_tostring(cL, -1));
 		return NULL;
 	}

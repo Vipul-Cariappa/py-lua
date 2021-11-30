@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-/* replaces the string rep from the string orig with the string with */
+/* creates new string by replaces the string rep from the string orig with the string with */
 char* str_replace(char* orig, char* rep, char* with) {
     char* result; // the return string
     char* ins;    // the next insert point
