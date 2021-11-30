@@ -64,6 +64,7 @@ pylua.vcxproj.user
 
 # Python
 __pycache__/
+*.pyd
 
 # User Defined
 _premake5.lua
