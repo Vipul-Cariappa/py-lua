@@ -21,6 +21,7 @@ jobs:
       uses: github/codeql-action/init@v1
       with:
           languages: cpp
+          queries: security-and-quality
 
     - name: Build
       run: bash .github/build.sh
@@ -33,7 +34,6 @@ jobs:
 
     - name: Code Coverage
       run: |
-        gcov -abcfu obj/Debug/c_string.c
         gcov -abcfu obj/Debug/lua_py.c
         gcov -abcfu obj/Debug/py_lua.c
         gcov -abcfu obj/Debug/convert.c

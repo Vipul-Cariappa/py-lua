@@ -71,7 +71,7 @@ function test_python_set_conversion()
 end
 
 function nothing()
-    print("From Lua Function")
+    -- print("From Lua Function")
     return nil
 end
 
@@ -91,7 +91,7 @@ end
 function test_get_called()
     local o = 4;
     function nested()
-        print(o+3);
+        -- print(o+3);
     end
     py_module.get_called(nested)
     py_module.get_called(lua_print)

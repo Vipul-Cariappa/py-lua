@@ -1,10 +1,12 @@
 #include "pylua.h"
 
 
-// lua_py.c
-PyObject* pPylua_Module;
-PyTypeObject pLuaInstance_Type;
-PyTypeObject pLuaTable_Type;
+// declaration in py_lua.c
+extern PyObject* pPylua_Module;
+extern PyTypeObject pLuaInstance_Type;
+extern PyTypeObject pLuaTable_Type;
+
+// declaration in lua_py.c
 int call_PyFunc(lua_State* L);
 int iter_PyGenerator(lua_State* L);
 

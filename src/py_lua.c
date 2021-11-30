@@ -1,84 +1,249 @@
-#include "pylua.h"
+#include "py_lua.h"
 
 
-PyTypeObject pLuaInstance_Type;
-static PyObject* LuaError;
-
-// lua_py.c
-extern lua_State* cL;
-
-
-static PyObject* raise_error(char* msg)
+PyMODINIT_FUNC PyInit_pylua(void)
 {
-	if (PyErr_Occurred())
+	PyObject* m;
+
+	if (PyType_Ready(&pLuaFunc_Type) < 0)
 	{
-		// TODO:
-		// if already error is occured
-		// add a new frame with the following
-		// PyErr_SetString(LuaError, msg);
 		return NULL;
 	}
 
-	PyErr_SetString(LuaError, msg);
-	return NULL;
+	m = PyModule_Create(&LUA_module);
+	if (m == NULL)
+	{
+		return NULL;
+	}
+
+
+	Py_INCREF(&pLuaFunc_Type);
+	if (PyModule_AddObject(m, "lua_function_wrapper", (PyObject*)&pLuaFunc_Type) < 0) {
+		Py_DECREF(&pLuaFunc_Type);
+		Py_DECREF(m);
+		return NULL;
+	}
+
+	if (PyType_Ready(&pLuaInstance_Type) < 0)
+	{
+		return NULL;
+	}
+
+	Py_INCREF(&pLuaInstance_Type);
+	if (PyModule_AddObject(m, "lua_instance_wrapper", (PyObject*)&pLuaInstance_Type) < 0) {
+		Py_DECREF(&pLuaInstance_Type);
+		Py_DECREF(m);
+		return NULL;
+	}
+
+	if (PyType_Ready(&pLuaTable_Type) < 0)
+	{
+		return NULL;
+	}
+
+	Py_INCREF(&pLuaTable_Type);
+	if (PyModule_AddObject(m, "lua_table_wrapper", (PyObject*)&pLuaTable_Type) < 0) {
+		Py_DECREF(&pLuaTable_Type);
+		Py_DECREF(m);
+		return NULL;
+	}
+
+	LuaError = PyErr_NewException("pylua.LuaError", NULL, NULL);
+	if (PyModule_AddObject(m, "error", LuaError) < 0) {
+		Py_XDECREF(LuaError);
+		Py_CLEAR(LuaError);
+		Py_DECREF(m);
+		return NULL;
+	}
+
+	return m;
 }
 
-static PyObject* create_return(lua_State* L, int len)
+
+static PyTypeObject pLuaFunc_Type = {
+	PyVarObject_HEAD_INIT(NULL, 0)
+	.tp_name = "pylua.lua_function_wrapper",
+	.tp_doc = "pylua.lua_function_wrapper",
+	.tp_basicsize = sizeof(PyLua_LuaFunc),
+	.tp_itemsize = 0,
+	.tp_flags = Py_TPFLAGS_DEFAULT,
+	.tp_new = &PyType_GenericNew,
+	.tp_init = &init_LuaFunc_Wrapper,
+	.tp_call = &call_LuaFunc,
+	.tp_iter = &iter_LuaCoroutine,
+	.tp_iternext = &next_LuaCoroutine,
+	.tp_finalize = &gc_LuaFunc,
+};
+
+PyTypeObject pLuaTable_Type = {
+	PyVarObject_HEAD_INIT(NULL, 0)
+	.tp_name = "pylua.lua_table_wrapper",
+	.tp_doc = "pylua.lua_table_wrapper",
+	.tp_basicsize = sizeof(PyLua_LuaTable),
+	.tp_itemsize = 0,
+	.tp_flags = Py_TPFLAGS_DEFAULT,
+	.tp_new = PyType_GenericNew,
+	.tp_init = &init_LuaTable_Wrapper,
+	.tp_as_mapping = &pLuaTable_MappingMethods,
+	.tp_call = &call_LuaTable_Wrapper,
+	.tp_finalize = &gc_LuaTable,
+};
+
+PyTypeObject pLuaInstance_Type = {
+	PyVarObject_HEAD_INIT(NULL, 0)
+	.tp_name = "pylua.lua_instance_wrapper",
+	.tp_doc = "pylua.lua_instance_wrapper",
+	.tp_basicsize = sizeof(PyLua_LuaTable),
+	.tp_itemsize = 0,
+	.tp_flags = Py_TPFLAGS_DEFAULT,
+	.tp_new = PyType_GenericNew,
+	.tp_init = &init_LuaTable_Wrapper,
+	.tp_as_number = &pLuaInstance_NumberMethods,
+	.tp_as_mapping = &pLuaInstance_MappingMethods,
+	.tp_richcompare = &compare_LuaInstance_Wrapper,
+	.tp_getattr = &getattr_LuaInstance_Wrapper,
+	.tp_setattr = &setattr_LuaInstance_Wrapper,
+	.tp_call = &call_LuaInstance_Wrapper,
+	.tp_str = &string_LuaInstance_Wrapper,
+	.tp_finalize = &gc_LuaTable,
+};
+
+
+static PyMappingMethods pLuaTable_MappingMethods = {
+	.mp_length = &len_LuaInstance_Wrapper,
+	.mp_subscript = &getelem_LuaTable_Wrapper,
+	.mp_ass_subscript = &setelem_LuaTable_Wrapper,
+};
+
+
+static PyMappingMethods pLuaInstance_MappingMethods = {
+	.mp_length = &len_LuaInstance_Wrapper,
+};
+
+static PyNumberMethods pLuaInstance_NumberMethods = {
+	.nb_add = &add_LuaInstance_Wrapper,
+	.nb_subtract = &sub_LuaInstance_Wrapper,
+	.nb_multiply = &mul_LuaInstance_Wrapper,
+	.nb_true_divide = &div_LuaInstance_Wrapper,
+	.nb_floor_divide = &floordiv_LuaInstance_Wrapper,
+	.nb_power = &pow_LuaInstance_Wrapper,
+	.nb_remainder = &mod_LuaInstance_Wrapper,
+	.nb_negative = &neg_LuaInstance_Wrapper,
+	.nb_lshift = &lshift_LuaInstance_Wrapper,
+	.nb_rshift = &rshift_LuaInstance_Wrapper,
+	.nb_and = &band_LuaInstance_Wrapper,
+	.nb_or = &bor_LuaInstance_Wrapper,
+	.nb_xor = &bxor_LuaInstance_Wrapper,
+	.nb_invert = &bnot_LuaInstance_Wrapper,
+	.nb_matrix_multiply = &concat_LuaInstance_Wrapper,
+};
+
+
+static struct PyModuleDef LUA_module = {
+	PyModuleDef_HEAD_INIT,
+	"pylua",
+	"pylua doc",
+	-1,
+};
+
+
+// Lua function and thread wrapper functions
+
+static PyObject* init_LuaFunc_Wrapper(PyLua_LuaFunc* self, PyObject* args, PyObject* kwargs)
 {
-	SAVE_STACK_SIZE(L);
-
-	PyObject* pReturn = NULL;
-
-	if (len == 0)
+	if (kwargs)
 	{
-		Py_INCREF(Py_None);
-		pReturn = Py_None;
+		// raise error
+		PyErr_SetString(LuaError, PERR_KWARG_LUA);
+		return NULL;
 	}
-	else if (len == 1)
+
+	int index;
+	int is_luathread;
+
+	if (!PyArg_ParseTuple(args, "ii", &index, &is_luathread))
 	{
-		pReturn = PyLua_LuaToPython(L, -1);
-		if (!pReturn)
+		// TODO: change msg to "Expected x, y but got z"
+		PyErr_SetString(LuaError, "Got wrong arguments to init_LuaFunc_Wrapper");
+		return NULL;
+	}
+
+	self->index = index;
+	self->is_luathread = is_luathread;
+	self->thread_terminated = 0;
+
+	return 0;
+}
+
+static PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwargs)
+{
+	if (self->is_luathread)
+	{
+		// raise error
+		PyErr_SetString(PyExc_TypeError, "Lua Thread Type is not Callable");
+		return NULL;
+	}
+
+	if (kwargs)
+	{
+		// raise error
+		PyErr_SetString(LuaError, PERR_KWARG_LUA);
+		return NULL;
+	}
+
+	int stack_size = lua_gettop(cL);
+
+	// ensure space for all operations
+	Py_ssize_t arg_len = PyTuple_Size(args);
+	lua_checkstack(cL, arg_len + 5);
+
+	// get function
+	lua_pushvalue(cL, LUA_REGISTRYINDEX);
+	lua_rawgeti(cL, -1, self->index);
+
+	// convert python variables to lua type
+	for (int i = 0; i < arg_len; i++)
+	{
+		PyObject* pItem = PyTuple_GetItem(args, i);
+		if (!pItem)
 		{
-			return raise_error(PERR_CONVERT_LUA_TO_PY);
+			return raise_error("error should have occured");
+		}
+		if (PyLua_PythonToLua(cL, pItem) < 0)
+		{
+			return raise_error(PERR_CONVERT_PY_TO_LUA);
 		}
 	}
-	else
-	{
-		pReturn = PyTuple_New(len);
-		int tmp = lua_gettop(L);
 
-		for (int i = tmp - len, j = 0; i <= tmp; i++, j++)
-		{
-			PyObject* pItem = PyLua_LuaToPython(L, i);
-			if (!pItem)
-			{
-				return raise_error(PERR_CONVERT_LUA_TO_PY);
-			}
-			PyTuple_SetItem(pReturn, j, pItem);
-		}
+	// execute function
+	if (lua_pcall(cL, arg_len, LUA_MULTRET, 0) != LUA_OK)
+	{
+		PyErr_Format(LuaError, ERR_CALL_LUA, lua_tostring(cL, -1));
+		return NULL;
 	}
 
-	CHECK_STACK_SIZE(L, 0);
+	int return_len = lua_gettop(cL) - (stack_size + 1);
+
+	PyObject* pReturn = create_return(cL, return_len);
+	lua_pop(cL, return_len + 1);
+
+	// check stack size
+	CHECK_STACK_ZERO(cL);
 
 	return pReturn;
 }
 
-static PyObject* flip_boolean(PyObject* ob)
+static PyObject* iter_LuaCoroutine(PyLua_LuaFunc* self)
 {
-	if (ob == Py_True)
+	if (!self->is_luathread)
 	{
-		Py_DECREF(ob);
-		ob = Py_False;
-		Py_INCREF(ob);
-	}
-	else
-	{
-		Py_DECREF(ob);
-		ob = Py_True;
-		Py_INCREF(ob);
+		// TODO: change msg to "expected lua thread but got x"
+		PyErr_Format(PyExc_TypeError, "Not a Lua Thread");
+		return NULL;
 	}
 
-	return ob;
+	Py_INCREF(self);
+	return self;
 }
 
 static PyObject* next_LuaCoroutine(PyLua_LuaFunc* self)
@@ -131,158 +296,37 @@ static PyObject* next_LuaCoroutine(PyLua_LuaFunc* self)
 	return pReturn;
 }
 
-static PyObject* iter_LuaCoroutine(PyLua_LuaFunc* self)
-{
-	if (!self->is_luathread)
-	{
-		// TODO: change msg to "expected lua thread but got x"
-		PyErr_Format(PyExc_TypeError, "Not a Lua Thread");
-		return NULL;
-	}
-
-	Py_INCREF(self);
-	return self;
-}
-
-
-static PyObject* call_LuaFunc(PyLua_LuaFunc* self, PyObject* args, PyObject* kwargs)
-{
-	if (self->is_luathread)
-	{
-		// raise error
-		PyErr_SetString(PyExc_TypeError, "Lua Thread Type is not Callable");
-		return NULL;
-	}
-
-	if (kwargs)
-	{
-		// raise error
-		PyErr_SetString(LuaError, PERR_KWARG_LUA);
-		return NULL;
-	}
-
-	int stack_size = lua_gettop(cL);
-
-	// ensure space for all operations
-	Py_ssize_t arg_len = PyTuple_Size(args);
-	lua_checkstack(cL, arg_len + 5);
-
-	// get function
-	lua_pushvalue(cL, LUA_REGISTRYINDEX);
-	lua_rawgeti(cL, -1, self->index);
-
-	// convert python variables to lua type
-	for (int i = 0; i < arg_len; i++)
-	{
-		PyObject* pItem = PyTuple_GetItem(args, i);
-		if (!pItem)
-		{
-			return raise_error("error should have occured");
-		}
-		if (PyLua_PythonToLua(cL, pItem) < 0)
-		{
-			return raise_error(PERR_CONVERT_PY_TO_LUA);
-		}
-	}
-
-	// execute function
-	if (lua_pcall(cL, arg_len, LUA_MULTRET, 0) != LUA_OK)
-	{
-		//return luaL_error(L, "Error: While calling the lua function.");
-
-		PyErr_Format(LuaError, ERR_CALL_LUA, lua_tostring(cL, -1));
-		return NULL;
-	}
-
-	int return_len = lua_gettop(cL) - (stack_size + 1);
-
-	PyObject* pReturn = create_return(cL, return_len);
-	lua_pop(cL, return_len + 1);
-
-	// check stack size
-	CHECK_STACK_ZERO(cL);
-
-	return pReturn;
-}
-
-static PyObject* gc_LuaFunc(PyLua_LuaFunc* self)
+static void gc_LuaFunc(PyLua_LuaFunc* self)
 {
 	lua_pushvalue(cL, LUA_REGISTRYINDEX);
 	luaL_unref(cL, -1, self->index);
 	lua_pop(cL, 1);
 
 	CHECK_STACK_ZERO(cL);
-
-	return 0;
 }
 
-static PyObject* get_LuaFunc_Wrapper(PyLua_LuaFunc* self, PyObject* args, PyObject* kwargs)
+
+// Lua table wrapper functions
+
+static int init_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* args, PyObject* kwargs)
 {
 	if (kwargs)
 	{
 		// raise error
 		PyErr_SetString(LuaError, PERR_KWARG_LUA);
-		return NULL;
+		return -1;
 	}
 
 	int index;
-	int is_luathread;
-
-	if (!PyArg_ParseTuple(args, "ii", &index, &is_luathread))
+	if (!PyArg_ParseTuple(args, "i", &index))
 	{
-		// TODO: change msg to "Expected x, y but got z"
-		PyErr_SetString(LuaError, "Got wrong arguments to get_LuaFunc_Wrapper");
-		return NULL;
+		PyErr_SetString(LuaError, "Got wrong arguments to init_LuaFunc_Wrapper");
+		return -1;
 	}
 
 	self->index = index;
-	self->is_luathread = is_luathread;
-	self->thread_terminated = 0;
 
 	return 0;
-}
-
-
-static PyObject* operation_LuaTable_base(PyLua_LuaTable* self, PyObject* other, const char* op)
-{
-	PyObject* pReturn;
-
-	// get table
-	lua_pushvalue(cL, LUA_REGISTRYINDEX);
-	lua_pushnil(cL); // placeholder for function (method)
-	lua_rawgeti(cL, -2, self->index);
-
-	// get function (method)
-	lua_getfield(cL, -1, op);
-	lua_replace(cL, -3);
-
-	// get other element
-	if (PyLua_PythonToLua(cL, other) < 0)
-	{
-		return raise_error(PERR_CONVERT_PY_TO_LUA);
-	}
-
-	// call function
-	if (lua_pcall(cL, 2, 1, 0) != LUA_OK)
-	{
-		//TODO: manage stack before raising error
-
-		PyErr_Format(LuaError, ERR_CALL_LUA, lua_tostring(cL, -1));
-		return NULL;
-	}
-
-	pReturn = PyLua_LuaToPython(cL, -1);
-	
-	if (!pReturn)
-	{
-		return raise_error(PERR_CONVERT_LUA_TO_PY);
-	}
-
-	lua_pop(cL, 2);	// result and registry
-
-	CHECK_STACK_ZERO(cL);
-
-	return pReturn;
 }
 
 static PyObject* getelem_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* pKey)
@@ -340,7 +384,8 @@ static int setelem_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* pKey, PyObje
 	PyObject* pStr = PyObject_Str(pKey);
 	if (!pStr)
 	{
-		return raise_error("error should have occured");
+		raise_error("error should have occured");
+		return -1;
 	}
 
 	PyObject* encodedString = PyUnicode_AsEncodedString(pKey, "UTF-8", "strict");
@@ -358,7 +403,8 @@ static int setelem_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* pKey, PyObje
 	}
 	else
 	{
-		return raise_error("error should have occured: memroy error");
+		raise_error("error should have occured: memroy error");
+		return -1;
 	}
 
 	// get table
@@ -394,28 +440,65 @@ static int setelem_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* pKey, PyObje
 	return 0;
 }
 
-static int wrapper_around_method(lua_State* L)
+static PyObject* call_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* args, PyObject* kwargs)
 {
-	int stack_size = lua_gettop(L);
-	lua_pushvalue(L, lua_upvalueindex(1));
-	lua_insert(L, 1);
-	lua_pushvalue(L, lua_upvalueindex(2));
-	lua_insert(L, 1);
+	PyObject* pReturn;
 
-	assert(stack_size + 2 == lua_gettop(L));
+	// stack size matching
+	int stack_size = lua_gettop(cL);
 
-	// execute function
-	if (lua_pcall(L, stack_size + 1, LUA_MULTRET, 0) != LUA_OK)
+	// get table
+	lua_pushvalue(cL, LUA_REGISTRYINDEX);
+	lua_pushnil(cL); // placeholder for function (method)
+	lua_rawgeti(cL, -2, self->index);
+
+	// get initialiser
+	// TODO: use optional kwargs if initializer function is not called "new"
+	lua_getfield(cL, -1, "new");
+	lua_replace(cL, stack_size + 2);
+
+
+	// python args to lua
+	Py_ssize_t arg_len = PyTuple_Size(args);
+
+	for (int i = 0; i < arg_len; i++)
 	{
-		PyErr_Format(LuaError, ERR_CALL_LUA, lua_tostring(cL, -1));
+		if (PyLua_PythonToLua(cL, PyTuple_GetItem(args, i)) < 0)
+		{
+			return raise_error(PERR_CONVERT_PY_TO_LUA);
+		}
+	}
+
+	// call function
+	if (lua_pcall(cL, arg_len + 1, 1, 0) != LUA_OK)
+	{
+		PyErr_Format(LuaError, ERR_CALL_PY, lua_tostring(cL, -1));
 		return NULL;
 	}
 
-	int return_len = lua_gettop(L);
-	assert(lua_gettop(L) == return_len);
+	pReturn = PyLua_LuaToPython(cL, -1);
+	if (!pReturn)
+	{
+		return raise_error(PERR_CONVERT_LUA_TO_PY);
+	}
+	lua_pop(cL, 2); // result and registry
 
-	return return_len;
+	CHECK_STACK_ZERO(cL);
+
+	return pReturn;
 }
+
+static void gc_LuaTable(PyLua_LuaTable* self)
+{
+	lua_pushvalue(cL, LUA_REGISTRYINDEX);
+	luaL_unref(cL, -1, self->index);
+	lua_pop(cL, 1);
+
+	CHECK_STACK_ZERO(cL);
+}
+
+
+// Lua instance (table) wrapper functions
 
 static PyObject* getattr_LuaInstance_Wrapper(PyLua_LuaTable* self, char* attr)
 {
@@ -472,7 +555,8 @@ static int setattr_LuaInstance_Wrapper(PyLua_LuaTable* self, char* attr, PyObjec
 
 	if (PyLua_PythonToLua(cL, pValue) < 0)
 	{
-		return raise_error(PERR_CONVERT_LUA_TO_PY);
+		raise_error(PERR_CONVERT_LUA_TO_PY);
+		return -1;
 	}
 
 	lua_setfield(cL, -2, attr);
@@ -542,6 +626,11 @@ static PyObject* call_LuaInstance_Wrapper(PyLua_LuaTable* self, PyObject* args, 
 	return pReturn;
 }
 
+static PyObject* string_LuaInstance_Wrapper(PyLua_LuaTable* self)
+{
+	return operation_LuaTable_base(self, Py_None, "__tostring");
+}
+
 static PyObject* concat_LuaInstance_Wrapper(PyLua_LuaTable* self, PyObject* other)
 {
 	return operation_LuaTable_base(self, other, "__concat");
@@ -567,7 +656,7 @@ static PyObject* div_LuaInstance_Wrapper(PyLua_LuaTable* self, PyObject* other)
 	return operation_LuaTable_base(self, other, "__div");
 }
 
-static PyObject* pow_LuaInstance_Wrapper(PyLua_LuaTable* self, PyObject* other)
+static PyObject* pow_LuaInstance_Wrapper(PyLua_LuaTable* self, PyObject* other, PyObject* t)
 {
 	return operation_LuaTable_base(self, other, "__pow");
 }
@@ -612,6 +701,10 @@ static PyObject* bnot_LuaInstance_Wrapper(PyLua_LuaTable* self)
 	return operation_LuaTable_base(self, Py_None, "__bnot");
 }
 
+static PyObject* neg_LuaInstance_Wrapper(PyLua_LuaTable* self)
+{
+	return operation_LuaTable_base(self, Py_None, "__unm");
+}
 
 static PyObject* compare_LuaInstance_Wrapper(PyLua_LuaTable* self, PyObject* other, int op)
 {
@@ -650,16 +743,6 @@ static PyObject* compare_LuaInstance_Wrapper(PyLua_LuaTable* self, PyObject* oth
 	return pReturn;
 }
 
-static PyObject* string_LuaInstance_Wrapper(PyLua_LuaTable* self)
-{
-	return operation_LuaTable_base(self, Py_None, "__tostring");
-}
-
-static PyObject* neg_LuaInstance_Wrapper(PyLua_LuaTable* self)
-{
-	return operation_LuaTable_base(self, Py_None, "__unm");
-}
-
 static Py_ssize_t len_LuaInstance_Wrapper(PyLua_LuaTable* self)
 {
 	Py_ssize_t x;
@@ -688,226 +771,4 @@ static Py_ssize_t len_LuaInstance_Wrapper(PyLua_LuaTable* self)
 	Py_DECREF(pObj);
 	Py_XDECREF(pReturn);
 	return x;
-}
-
-static PyObject* call_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* args, PyObject* kwargs)
-{
-	PyObject* pReturn;
-
-	// stack size matching
-	int stack_size = lua_gettop(cL);
-
-	// get table
-	lua_pushvalue(cL, LUA_REGISTRYINDEX);
-	lua_pushnil(cL); // placeholder for function (method)
-	lua_rawgeti(cL, -2, self->index);
-
-	// get initialiser
-	// TODO: use optional kwargs if initializer function is not called "new"
-	lua_getfield(cL, -1, "new");
-	lua_replace(cL, stack_size + 2);
-
-
-	// python args to lua
-	Py_ssize_t arg_len = PyTuple_Size(args);
-
-	for (int i = 0; i < arg_len; i++)
-	{
-		if (PyLua_PythonToLua(cL, PyTuple_GetItem(args, i)) < 0)
-		{
-			return raise_error(PERR_CONVERT_PY_TO_LUA);
-		}
-	}
-
-	// call function
-	if (lua_pcall(cL, arg_len + 1, 1, 0) != LUA_OK)
-	{
-		PyErr_Format(LuaError, ERR_CALL_PY, lua_tostring(cL, -1));
-		return NULL;
-	}
-
-	pReturn = PyLua_LuaToPython(cL, -1);
-	if (!pReturn)
-	{
-		return raise_error(PERR_CONVERT_LUA_TO_PY);
-	}
-	lua_pop(cL, 2); // result and registry
-
-	CHECK_STACK_ZERO(cL);
-
-	return pReturn;
-}
-
-static PyObject* get_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* args, PyObject* kwargs)
-{
-	if (kwargs)
-	{
-		// raise error
-		PyErr_SetString(LuaError, PERR_KWARG_LUA);
-		return NULL;
-	}
-
-	int index;
-	if (!PyArg_ParseTuple(args, "i", &index))
-	{
-		PyErr_SetString(LuaError, "Got wrong arguments to get_LuaFunc_Wrapper");
-		return NULL;
-	}
-
-	self->index = index;
-
-	return 0;
-}
-
-static PyObject* gc_LuaTable(PyLua_LuaTable* self)
-{
-	lua_pushvalue(cL, LUA_REGISTRYINDEX);
-	luaL_unref(cL, -1, self->index);
-	lua_pop(cL, 1);
-
-	CHECK_STACK_ZERO(cL);
-
-	return 0;
-}
-
-static PyTypeObject pLuaFunc_Type = {
-	PyVarObject_HEAD_INIT(NULL, 0)
-	.tp_name = "pylua.lua_function_wrapper",
-	.tp_doc = "pylua.lua_function_wrapper",
-	.tp_basicsize = sizeof(PyLua_LuaFunc),
-	.tp_itemsize = 0,
-	.tp_flags = Py_TPFLAGS_DEFAULT,
-	.tp_new = &PyType_GenericNew,
-	.tp_init = &get_LuaFunc_Wrapper,
-	.tp_call = &call_LuaFunc,
-	.tp_iter = &iter_LuaCoroutine,
-	.tp_iternext = &next_LuaCoroutine,
-	.tp_finalize = &gc_LuaFunc,
-};
-
-static PyMappingMethods pLuaInstance_MappingMethods = {
-	.mp_length = &len_LuaInstance_Wrapper,
-};
-
-static PyMappingMethods pLuaTable_MappingMethods = {
-	.mp_length = &len_LuaInstance_Wrapper,
-	.mp_subscript = &getelem_LuaTable_Wrapper,
-	.mp_ass_subscript = &setelem_LuaTable_Wrapper,
-};
-
-static PyNumberMethods pLuaInstance_NumberMethods = {
-	.nb_add = &add_LuaInstance_Wrapper,
-	.nb_subtract = &sub_LuaInstance_Wrapper,
-	.nb_multiply = &mul_LuaInstance_Wrapper,
-	.nb_true_divide = &div_LuaInstance_Wrapper,
-	.nb_floor_divide = &floordiv_LuaInstance_Wrapper,
-	.nb_power = &pow_LuaInstance_Wrapper,
-	.nb_remainder = &mod_LuaInstance_Wrapper,
-	.nb_negative = &neg_LuaInstance_Wrapper,
-	.nb_lshift = &lshift_LuaInstance_Wrapper,
-	.nb_rshift = &rshift_LuaInstance_Wrapper,
-	.nb_and = &band_LuaInstance_Wrapper,
-	.nb_or = &bor_LuaInstance_Wrapper,
-	.nb_xor = &bxor_LuaInstance_Wrapper,
-	.nb_invert = &bnot_LuaInstance_Wrapper,
-	.nb_matrix_multiply = &concat_LuaInstance_Wrapper,
-};
-
-PyTypeObject pLuaInstance_Type = {
-	PyVarObject_HEAD_INIT(NULL, 0)
-	.tp_name = "pylua.lua_instance_wrapper",
-	.tp_doc = "pylua.lua_instance_wrapper",
-	.tp_basicsize = sizeof(PyLua_LuaTable),
-	.tp_itemsize = 0,
-	.tp_flags = Py_TPFLAGS_DEFAULT,
-	.tp_new = PyType_GenericNew,
-	.tp_init = &get_LuaTable_Wrapper,
-	.tp_as_number = &pLuaInstance_NumberMethods,
-	.tp_as_mapping = &pLuaInstance_MappingMethods,
-	.tp_richcompare = &compare_LuaInstance_Wrapper,
-	.tp_getattr = &getattr_LuaInstance_Wrapper,
-	.tp_setattr = &setattr_LuaInstance_Wrapper,
-	.tp_call = &call_LuaInstance_Wrapper,
-	.tp_str = &string_LuaInstance_Wrapper,
-	.tp_finalize = &gc_LuaTable,
-};
-
-PyTypeObject pLuaTable_Type = {
-	PyVarObject_HEAD_INIT(NULL, 0)
-	.tp_name = "pylua.lua_table_wrapper",
-	.tp_doc = "pylua.lua_table_wrapper",
-	.tp_basicsize = sizeof(PyLua_LuaTable),
-	.tp_itemsize = 0,
-	.tp_flags = Py_TPFLAGS_DEFAULT,
-	.tp_new = PyType_GenericNew,
-	.tp_init = get_LuaTable_Wrapper,
-	.tp_as_mapping = &pLuaTable_MappingMethods,
-	.tp_call = call_LuaTable_Wrapper,
-	.tp_finalize = &gc_LuaTable,
-};
-
-
-static struct PyModuleDef LUA_module = {
-	PyModuleDef_HEAD_INIT,
-	"pylua",
-	"pylua doc",
-	-1,
-};
-
-PyMODINIT_FUNC PyInit_pylua(void)
-{
-	PyObject* m;
-
-	if (PyType_Ready(&pLuaFunc_Type) < 0)
-	{
-		return NULL;
-	}
-
-	m = PyModule_Create(&LUA_module);
-	if (m == NULL)
-	{
-		return NULL;
-	}
-
-
-	Py_INCREF(&pLuaFunc_Type);
-	if (PyModule_AddObject(m, "lua_function_wrapper", (PyObject*)&pLuaFunc_Type) < 0) {
-		Py_DECREF(&pLuaFunc_Type);
-		Py_DECREF(m);
-		return NULL;
-	}
-
-	if (PyType_Ready(&pLuaInstance_Type) < 0)
-	{
-		return NULL;
-	}
-
-	Py_INCREF(&pLuaInstance_Type);
-	if (PyModule_AddObject(m, "lua_instance_wrapper", (PyObject*)&pLuaInstance_Type) < 0) {
-		Py_DECREF(&pLuaInstance_Type);
-		Py_DECREF(m);
-		return NULL;
-	}
-
-	if (PyType_Ready(&pLuaTable_Type) < 0)
-	{
-		return NULL;
-	}
-
-	Py_INCREF(&pLuaTable_Type);
-	if (PyModule_AddObject(m, "lua_table_wrapper", (PyObject*)&pLuaTable_Type) < 0) {
-		Py_DECREF(&pLuaTable_Type);
-		Py_DECREF(m);
-		return NULL;
-	}
-
-	LuaError = PyErr_NewException("pylua.LuaError", NULL, NULL);
-	if (PyModule_AddObject(m, "error", LuaError) < 0) {
-		Py_XDECREF(LuaError);
-		Py_CLEAR(LuaError);
-		Py_DECREF(m);
-		return NULL;
-	}
-
-	return m;
 }
