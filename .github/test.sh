@@ -1,4 +1,5 @@
 mv bin/libpylua.so tests/pylua.so
+mv bin/libpylua.so tests/pylua.pyd
 cd tests
 
 FILE=luaunit.lua
@@ -13,7 +14,7 @@ else
     wget https://raw.githubusercontent.com/bluebird75/luaunit/master/luaunit.lua
 fi
 
-printf "Running Tests\n"
+printf "Running Lua Side Tests\n"
 
 printf "\nTest Case 1\n"
 if ! lua test0.lua; then
@@ -39,5 +40,14 @@ printf "\nTest Case 5\n"
 if ! lua test4.lua; then
     exit -1
 fi
+
+
+printf "\n\nRunning Python Side Tests\n"
+
+printf "\nTest Case 1\n"
+if ! python3 testA.py; then
+    exit -1
+fi
+
 
 printf "\n\nFinished Running all tests\n"

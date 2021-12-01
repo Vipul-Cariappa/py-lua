@@ -1,14 +1,31 @@
 #include "py_lua.h"
 
 
+int PyLua_LuaLoadedModuleCount = 0;
+
+
 PyMODINIT_FUNC PyInit_pylua(void)
 {
-	PyObject* m;
-
-	if (PyType_Ready(&pLuaFunc_Type) < 0)
+	if (DrivingLang == -1)
 	{
-		return NULL;
+		DrivingLang = 1;
+
+		// initilise lua interpreter
+		nL = luaL_newstate();
+		luaL_openlibs(nL);
+		
+		// load pylua module onto lua interpreter
+		lua_pushcfunction(nL, &luaopen_pylua);
+		if (lua_pcall(nL, 0, 0, 0) != LUA_OK)
+		{
+			// raise error
+			PyErr_SetString(PyExc_ImportError, "Unable to load pylua module onto lua interpreter");
+			lua_close(nL);
+			return NULL;
+		}
 	}
+
+	PyObject* m;
 
 	m = PyModule_Create(&LUA_module);
 	if (m == NULL)
@@ -16,6 +33,22 @@ PyMODINIT_FUNC PyInit_pylua(void)
 		return NULL;
 	}
 
+	if (PyType_Ready(&pLuaModule_Type) < 0)
+	{
+		return NULL;
+	}
+
+	Py_INCREF(&pLuaModule_Type);
+	if (PyModule_AddObject(m, "LuaModule", (PyObject*)&pLuaModule_Type) < 0) {
+		Py_DECREF(&pLuaModule_Type);
+		Py_DECREF(m);
+		return NULL;
+	}
+	
+	if (PyType_Ready(&pLuaFunc_Type) < 0)
+	{
+		return NULL;
+	}
 
 	Py_INCREF(&pLuaFunc_Type);
 	if (PyModule_AddObject(m, "lua_function_wrapper", (PyObject*)&pLuaFunc_Type) < 0) {
@@ -56,6 +89,8 @@ PyMODINIT_FUNC PyInit_pylua(void)
 		return NULL;
 	}
 
+	pPylua_Module = m;
+
 	return m;
 }
 
@@ -74,6 +109,8 @@ static PyTypeObject pLuaFunc_Type = {
 	.tp_iternext = &next_LuaCoroutine,
 	.tp_finalize = &gc_LuaFunc,
 };
+
+// TODO: implement convertion to dict, list and iteration for Lua Tables and Instances
 
 PyTypeObject pLuaTable_Type = {
 	PyVarObject_HEAD_INIT(NULL, 0)
@@ -108,6 +145,20 @@ PyTypeObject pLuaInstance_Type = {
 	.tp_finalize = &gc_LuaTable,
 };
 
+static PyTypeObject pLuaModule_Type = {
+	PyVarObject_HEAD_INIT(NULL, 0)
+	.tp_name = "pylua.LuaLoad",
+	.tp_doc = "pylua.LuaLoad",
+	.tp_basicsize = sizeof(PyLua_LuaModule),
+	.tp_itemsize = 0,
+	.tp_flags = Py_TPFLAGS_DEFAULT,
+	.tp_new = PyType_GenericNew,
+	.tp_init = &PyLua_LuaInit,
+	.tp_getattr = &PyLua_LuaGet,
+	.tp_setattr = &PyLua_LuaSet,
+	.tp_finalize = &PyLua_LuaGC,
+};
+
 
 static PyMappingMethods pLuaTable_MappingMethods = {
 	.mp_length = &len_LuaInstance_Wrapper,
@@ -139,12 +190,101 @@ static PyNumberMethods pLuaInstance_NumberMethods = {
 };
 
 
+static PyMethodDef PyLua_Methods[3] = {
+	{"LuaLoad",  &PyLua_LuaLoadModule, METH_VARARGS, "pylua.LuaLoad"},
+	//{"LuaUnload",  &PyLua_LuaUnloadModule, METH_VARARGS, "pylua.LuaUnload"},
+	{NULL, NULL, 0, NULL}
+};
+
+
 static struct PyModuleDef LUA_module = {
 	PyModuleDef_HEAD_INIT,
 	"pylua",
 	"pylua doc",
 	-1,
+	&PyLua_Methods
 };
+
+
+// Python Module Functions
+
+static PyObject* PyLua_LuaLoadModule(PyObject* self, PyObject* args)
+{
+	PyObject* obj = PyObject_GetAttrString(pPylua_Module, "LuaModule");
+	if (obj)
+	{
+		return PyObject_CallObject(obj, args);
+	}
+
+	PyErr_SetString(LuaError, "Unable to access pylua.LuaModule");
+	return NULL;
+}
+
+static PyObject* PyLua_LuaUnloadModule(PyObject* self, PyObject* args)
+{
+	// TODO: implement
+	Py_RETURN_NONE;
+}
+
+static int PyLua_LuaInit(PyLua_LuaModule* self, PyObject* args, PyObject* kwargs)
+{
+	char* name;
+	if (!PyArg_ParseTuple(args, "s", &name))
+	{
+		PyErr_SetString(LuaError, "Got wrong arguments to LuaModule");
+		return -1;
+	}
+
+	int load_status = luaL_loadfile(nL, name);
+
+	switch (load_status)
+	{
+	case LUA_OK:
+		if (lua_pcall(nL, 0, 0, 0) != LUA_OK)
+		{
+			PyErr_SetString(LuaError, "Error occured when executing the lua program");
+			return -1;
+		}
+		break;
+
+	case LUA_ERRSYNTAX:
+		PyErr_SetString(LuaError, "Syntax Error in Lua File");
+		return -1;
+
+	case LUA_ERRMEM:
+		PyErr_NoMemory();
+		return -1;
+
+	default:
+		PyErr_SetString(LuaError, "Unknowen error occured when loading the file");
+		return -1;
+	}
+
+	self->name = name;
+	self->loaded = 1;
+
+	return 0;
+}
+
+static PyObject* PyLua_LuaGet(PyLua_LuaModule* self, char* attr)
+{
+	lua_getglobal(nL, attr);
+	PyObject* pReturn = PyLua_LuaToPython(nL, -1);
+	lua_pop(nL, 1);
+	return pReturn;
+}
+
+static int PyLua_LuaSet(PyLua_LuaModule* self, char* attr, PyObject* pValue)
+{
+	PyErr_SetString(LuaError, "Cannot Assign Values to LuaModule Objects");
+	return -1;
+}
+
+static void PyLua_LuaGC(PyLua_LuaModule* self)
+{
+	// TODO: implement
+	return 0;
+}
 
 
 // Lua function and thread wrapper functions

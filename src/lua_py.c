@@ -9,6 +9,53 @@ __declspec(dllexport)
 #endif
 int luaopen_pylua(lua_State* L)
 {
+	SAVE_STACK_SIZE(L);
+
+	if (DrivingLang == -1)
+	{
+		DrivingLang = 0;
+
+		// initialise python interpreter
+		if (PyImport_AppendInittab("pylua", PyInit_pylua) == -1) {
+			return luaL_error(L, "Error: could not extend in-built modules table");
+		}
+
+		Py_Initialize();
+
+		wchar_t* path = Py_GetPath();
+
+		#if defined(_WIN32)
+		wchar_t new_path[800];
+		if (!new_path)
+		{
+			exit(-1);
+		}
+		new_path[0] = L'.';
+		new_path[1] = L';';
+		new_path[2] = L'\0';
+		#else
+		wchar_t new_path[800];
+		if (!new_path)
+		{
+			exit(-1);
+		}
+		new_path[0] = L'.';
+		new_path[1] = L':';
+		new_path[2] = L'\0';
+		#endif
+
+		wcsncat(new_path, path, wcslen(path));
+
+		PySys_SetPath(new_path);
+
+		pPylua_Module = PyImport_ImportModule("pylua");
+		if (!pPylua_Module)
+		{
+			return raise_error(L, "Error: could not import module 'pylua'");
+		}
+
+	}
+
 	lua_pushvalue(L, LUA_REGISTRYINDEX);
 	cL = lua_newthread(L);
 	lua_setfield(L, -2, "pylua thread");
@@ -36,7 +83,9 @@ int luaopen_pylua(lua_State* L)
 	lua_setfield(L, -2, "__python");
 	lua_setglobal(L, "PythonClassWrapper");
 
-	return 1;
+	CHECK_STACK_SIZE(L, 0);
+
+	return 0;
 }
 
 
@@ -506,48 +555,6 @@ static int bnot_PyObj(lua_State* L)
 
 static int PyLua_PyLoadModule(lua_State* L)
 {
-	if (!Py_IsInitialized())
-	{
-		if (PyImport_AppendInittab("pylua", PyInit_pylua) == -1) {
-			return luaL_error(L, "Error: could not extend in-built modules table");
-		}
-
-		Py_Initialize();
-
-		wchar_t* path = Py_GetPath();
-
-#if defined(_WIN32)
-		wchar_t new_path[800];
-		if (!new_path)
-		{
-			exit(-1);
-		}
-		new_path[0] = L'.';
-		new_path[1] = L';';
-		new_path[2] = L'\0';
-#else
-		wchar_t new_path[800];
-		if (!new_path)
-		{
-			exit(-1);
-		}
-		new_path[0] = L'.';
-		new_path[1] = L':';
-		new_path[2] = L'\0';
-#endif
-
-		wcsncat(new_path, path, wcslen(path));
-
-		PySys_SetPath(new_path);
-
-		pPylua_Module = PyImport_ImportModule("pylua");
-		if (!pPylua_Module)
-		{
-			return raise_error(L, "Error: could not import module 'pylua'");
-		}
-
-	}
-
 	const char* module_name = luaL_checkstring(L, 1);
 	PyObject* pModule = PyImport_ImportModule(module_name);
 
