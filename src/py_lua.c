@@ -123,6 +123,7 @@ PyTypeObject pLuaTable_Type = {
 	.tp_init = &init_LuaTable_Wrapper,
 	.tp_as_mapping = &pLuaTable_MappingMethods,
 	.tp_call = &call_LuaTable_Wrapper,
+	.tp_iter = &iter_LuaTable,
 	.tp_finalize = &gc_LuaTable,
 };
 
@@ -141,6 +142,7 @@ PyTypeObject pLuaInstance_Type = {
 	.tp_getattr = &getattr_LuaInstance_Wrapper,
 	.tp_setattr = &setattr_LuaInstance_Wrapper,
 	.tp_call = &call_LuaInstance_Wrapper,
+	.tp_iter = &iter_LuaTable,
 	.tp_str = &string_LuaInstance_Wrapper,
 	.tp_finalize = &gc_LuaTable,
 };
@@ -578,6 +580,12 @@ static int setelem_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* pKey, PyObje
 	CHECK_STACK_ZERO(cL);
 	
 	return 0;
+}
+
+static PyObject* iter_LuaTable(PyLua_LuaTable* self)
+{
+	// to be implemented
+	Py_RETURN_NONE;
 }
 
 static PyObject* call_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* args, PyObject* kwargs)

@@ -89,7 +89,7 @@ static PyObject* create_return(lua_State* L, int len)
 		pReturn = PyTuple_New(len);
 		int tmp = lua_gettop(L);
 
-		for (int i = tmp - len, j = 0; i <= tmp; i++, j++)
+		for (int i = tmp - len + 1, j = 0; i <= tmp; i++, j++)
 		{
 			PyObject* pItem = PyLua_LuaToPython(L, i);
 			if (!pItem)
@@ -211,6 +211,7 @@ static void gc_LuaFunc(PyLua_LuaFunc* self);
 static int init_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* args, PyObject* kwargs);
 static PyObject* getelem_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* pKey);
 static int setelem_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* pKey, PyObject* pValue);
+static PyObject* iter_LuaTable(PyLua_LuaTable* self);
 static PyObject* call_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* args, PyObject* kwargs);
 static void gc_LuaTable(PyLua_LuaTable* self);
 

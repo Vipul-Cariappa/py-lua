@@ -9,10 +9,12 @@ class TestBasic(unittest.TestCase):
         self.assertEqual(lua_module.int, 121)
         self.assertFalse(lua_module.boolean)
 
-    @unittest.skip("Convertion to list or iteration not yet implemented")
     def test_complex_types(self):
-        for i in enumerate(lua_module.list):
-            self.assertEqual(e, i)
+        for i, j in lua_module.list1:
+            self.assertEqual(i + 1, j)
+        
+        for i, j in lua_module.list2:
+            self.assertEqual(i, j)
 
     def test_function_calls(self):
         self.assertEqual(lua_module.return121(), 121)

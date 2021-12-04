@@ -95,6 +95,8 @@ int PyLua_PythonToLua(lua_State* L, PyObject* pItem)
 		}
 
 	}
+	// TODO: implement a way to iterate over python list, tuple, dict from lua
+	// TODO: Remove the convertion between list, tuple, dict and sets and wrap them around Instance type
 	else if (PyDict_Check(pItem))
 	{
 		// to table
