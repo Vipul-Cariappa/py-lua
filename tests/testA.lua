@@ -18,3 +18,23 @@ function get_values(a, b, c, d)
     lu.assertEquals(c, false)
     lu.assertEquals(d, "Python")
 end
+
+Rectangle = {length = 0, breadth = 0}
+
+function Rectangle:new(length, breadth)
+    o = {}
+    setmetatable(o, self)
+    self.__index = self
+    o.length = length
+    o.breadth = breadth
+    return o
+end
+
+function Rectangle:__tostring()
+    return "Rectangle(length = " .. tostring(self.length) .. ", Breadth = " .. tostring(self.breadth) .. ")"
+end
+
+function Rectangle:get_area()
+    self.area = self.length * self.breadth
+    return self.area
+end

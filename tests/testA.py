@@ -21,6 +21,14 @@ class TestBasic(unittest.TestCase):
         self.assertEqual(lua_module.return121(), 121)
         lua_module.get_values(121, 1.5, False, "Python")
 
+    def test_classes_and_instance(self):
+        r1 = lua_module.Rectangle(4, 6)
+        self.assertEqual(r1.get_area(), 24)
+        self.assertEqual(r1.length, 4)
+        self.assertEqual(r1.breadth, 6)
+        self.assertEqual(str(r1), "Rectangle(length = 4.0, Breadth = 6.0)")
+
+
 
 if __name__ == "__main__":
     unittest.main()
