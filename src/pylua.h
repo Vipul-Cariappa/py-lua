@@ -3,6 +3,10 @@
 
 #include <Python.h>
 #include <lua.h>
+#include <lauxlib.h>
+
+
+extern int DrivingLang; // 0 if lua, 1 if python
 
 
 // Debug build runtime checks
@@ -43,6 +47,7 @@
 
 // declaration in lua_py.c
 extern lua_State* cL;	// TODO: Remove this from global state
+extern PyObject* pPylua_Module;    // python's pylua module
 
 
 // declaration in convert.c
@@ -83,5 +88,11 @@ typedef struct PyLua_LuaTable {
 	PyObject_HEAD
 		int index;
 } PyLua_LuaTable;
+
+typedef struct PyLua_LuaModule {
+	PyObject_HEAD
+		char* name;
+	int loaded;
+} PyLua_LuaModule;
 
 #endif // PYLUA_H

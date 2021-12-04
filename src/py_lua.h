@@ -15,12 +15,25 @@
 #include "pylua.h"
 
 
+int DrivingLang = -1; // 0 if lua, 1 if python
+
+
+// declaration in py_lua.c
+#if defined(_WIN32)
+__declspec(dllexport)
+#endif
+int luaopen_pylua(lua_State* L);
+
+
 // declaration here
+static PyTypeObject pLuaModule_Type;
 static PyTypeObject pLuaFunc_Type;
 PyTypeObject pLuaInstance_Type;		// used elsewhere
 PyTypeObject pLuaTable_Type;		// used elsewhere
 static PyObject* LuaError;
 static struct PyModuleDef LUA_module;
+static PyMethodDef PyLua_Methods[3];
+static lua_State* nL;	// global lua state (stack) used by python binding
 
 static PyMappingMethods pLuaInstance_MappingMethods;
 static PyMappingMethods pLuaTable_MappingMethods;
@@ -76,7 +89,7 @@ static PyObject* create_return(lua_State* L, int len)
 		pReturn = PyTuple_New(len);
 		int tmp = lua_gettop(L);
 
-		for (int i = tmp - len, j = 0; i <= tmp; i++, j++)
+		for (int i = tmp - len + 1, j = 0; i <= tmp; i++, j++)
 		{
 			PyObject* pItem = PyLua_LuaToPython(L, i);
 			if (!pItem)
@@ -198,6 +211,7 @@ static void gc_LuaFunc(PyLua_LuaFunc* self);
 static int init_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* args, PyObject* kwargs);
 static PyObject* getelem_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* pKey);
 static int setelem_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* pKey, PyObject* pValue);
+static PyObject* iter_LuaTable(PyLua_LuaTable* self);
 static PyObject* call_LuaTable_Wrapper(PyLua_LuaTable* self, PyObject* args, PyObject* kwargs);
 static void gc_LuaTable(PyLua_LuaTable* self);
 
@@ -225,5 +239,15 @@ static PyObject* bnot_LuaInstance_Wrapper(PyLua_LuaTable* self);
 static PyObject* neg_LuaInstance_Wrapper(PyLua_LuaTable* self);
 static PyObject* compare_LuaInstance_Wrapper(PyLua_LuaTable* self, PyObject* other, int op);
 static Py_ssize_t len_LuaInstance_Wrapper(PyLua_LuaTable* self);
+
+
+// Python Module Functions
+
+static PyObject* PyLua_LuaLoadModule(PyObject* self, PyObject* args);
+static PyObject* PyLua_LuaUnloadModule(PyObject* self, PyObject* args);
+static int PyLua_LuaInit(PyLua_LuaModule* self, PyObject* args, PyObject* kwargs);
+static PyObject* PyLua_LuaGet(PyLua_LuaModule* self, char* attr);
+static int PyLua_LuaSet(PyLua_LuaModule* self, char* attr, PyObject* pValue);
+static void PyLua_LuaGC(PyLua_LuaModule* self);
 
 #endif // PY_LUA_H

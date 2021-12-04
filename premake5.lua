@@ -6,7 +6,7 @@ project "pylua"
    language "C"
    targetdir "bin/%{cfg.buildcfg}"
 
-   includedirs { "src/header", "/path/to/python/header", "/path/to/lua/header" }
+   includedirs { "/path/to/python/header", "/path/to/lua/header" }
    libdirs { "/path/to/python/shared_libraries", "/path/to/lua/shared_libraries" }
    files { "src/**.h", "src/**.c" }
 
