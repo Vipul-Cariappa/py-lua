@@ -1,0 +1,21 @@
+image:
+  file: .gitpod.dockerfile
+
+tasks:
+  - command: |
+      cp ./.github/premake5.lua premake5.lua
+      premake5 gmake
+      bear make
+
+vscode:
+  extensions:
+    - llvm-vs-code-extensions.vscode-clangd
+    - vadimcn.vscode-lldb
+    - ms-python.python
+    - sumneko.lua
+    - ms-toolsai.jupyter
+    - eamodio.gitlens
+    - ms-toolsai.jupyter-keymap
+    - ms-toolsai.jupyter-renderers
+    - Gruntfuggly.todo-tree
+    - ms-vscode.hexeditor
