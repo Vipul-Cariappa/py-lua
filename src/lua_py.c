@@ -1,5 +1,11 @@
 #include "lua_py.h"
+#include <dlfcn.h>
 
+#define STR_HELPER(x) #x
+#define STR(x) STR_HELPER(x)
+#define PYLIB_PATH                                                             \
+  "/usr/lib/x86_64-linux-gnu/libpython" STR(PY_MAJOR_VERSION) "." STR(         \
+      PY_MINOR_VERSION) ".so"
 
 int PyLua_PyLoadedModuleCount = 0;
 
@@ -19,6 +25,10 @@ int luaopen_pylua(lua_State* L)
 		if (PyImport_AppendInittab("pylua", PyInit_pylua) == -1) {
 			return luaL_error(L, "Error: could not extend in-built modules table");
 		}
+
+#if defined (__linux__)
+	dlopen(PYLIB_PATH, RTLD_LAZY | RTLD_GLOBAL);	// TODO: handle errors
+#endif
 
 		Py_Initialize();
 
@@ -53,7 +63,6 @@ int luaopen_pylua(lua_State* L)
 		{
 			return raise_error(L, "Error: could not import module 'pylua'");
 		}
-
 	}
 
 	lua_pushvalue(L, LUA_REGISTRYINDEX);
