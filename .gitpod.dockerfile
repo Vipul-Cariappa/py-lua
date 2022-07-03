@@ -37,5 +37,5 @@ RUN wget http://www.lua.org/ftp/lua-5.4.3.tar.gz \
   && rm -fr lua-5.4.3
 
 # downloading and extracting luaunit
-RUN wget https://raw.githubusercontent.com/bluebird75/luaunit/master/luaunit.lua \
-  && mv luaunit.lua tests/
+# RUN wget https://raw.githubusercontent.com/bluebird75/luaunit/master/luaunit.lua \
+#   && mv luaunit.lua tests/
