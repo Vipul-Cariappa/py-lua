@@ -82,11 +82,14 @@ static int raise_error(lua_State* L, const char* msg)
 		while (pTrace != NULL)
 		{
 			PyFrameObject* frame = pTrace->tb_frame;
-			PyCodeObject* code = frame->f_code;
+			PyCodeObject* code = PyFrame_GetCode(frame);
 
 			int lineNr = PyFrame_GetLineNumber(frame);
 			const char* codeName = PyUnicode_AsUTF8(code->co_name);
 			const char* fileName = PyUnicode_AsUTF8(code->co_filename);
+
+			Py_DECREF(code);
+			// Py_DECREF();
 
 			if (snprintf(traceback_msg, TRACEBACK_STR_LEN, "File \"%s\", line %i, in\n  %s\n", fileName, lineNr, codeName) < 0)
 			{

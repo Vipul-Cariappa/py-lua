@@ -736,3 +736,4 @@ pylua.make
 tmp*
 bin/
 obj/
+.clangd/
