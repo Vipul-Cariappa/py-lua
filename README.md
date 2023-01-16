@@ -3,9 +3,9 @@
 [![codecov](https://codecov.io/gh/Vipul-Cariappa/py-lua/branch/main/graph/badge.svg?token=LOUBWQJGF9)](https://codecov.io/gh/Vipul-Cariappa/py-lua)
 
 Bridge between Python and Lua.
-This project has been started to provide easy binding between python and lua programming languages. Currently tested with lua version 5.4 and python version 3.8.
+This project has been started to provide easy binding between python and lua programming languages. Currently tested with lua version 5.4 and python.
 
-### Currently py-lua supports:
+## Currently py-lua supports:
 - Importing python module into lua program.
 - Getting string, float, boolean and None data types from python.
 - Convertion between python dict and lua table.
@@ -14,6 +14,7 @@ This project has been started to provide easy binding between python and lua pro
 - Support to use Object Oriented Programming between the languages.
 
 ## Example
+### using python inside lua
 ```python
 # mymodule.py
 PI = 3.14
@@ -61,6 +62,30 @@ print(tostring(rect))
 -- Rectangle(x=4.0, y=6.0)
 
 ```
+### Using lua inside python
+```lua
+-- mymodule.lua
+
+function celsius_to_fahrenheit(x)
+    return (x * 1.8) + 32
+end
+
+function fahrenheit_to_celsius(x)
+    return (x - 32) * .5556
+end
+```
+
+```python
+# main.py
+import pylua
+    
+lua_module = pylua.LuaLoad("mymodule.lua")
+
+ctf_40 = lua_module.celsius_to_fahrenheit(40)
+ftc_n40 = lua_module.fahrenheit_to_celsius(-40)
+
+print(f"{ctf_40 = }, {ftc_n40 = }") # ctf_40 = 104.0, ftc_n40 = -40.0032
+```
 
 ## Building
 To compile py-lua. First install the required dependencies:
@@ -89,14 +114,6 @@ Copy the shared library pylua.so file to the working directory of your project.
 
 If you face any problems while building please ask for help [here](https://github.com/Vipul-Cariappa/py-lua/discussions/new).
 
-
-## Yet to Implement
-- [x] Simple data type convertions
-- [x] Calling python functions from lua
-- [x] Support list, tuple, dict and set
-- [x] Support for generator functions
-- [x] Support for working with python classes from lua
-- [ ] Calling lua from python (lua bindings for python)
 
 ## Contribution
 All contributions are welcomed. 
