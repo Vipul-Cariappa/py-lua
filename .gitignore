@@ -727,6 +727,9 @@ FodyWeavers.xsd
 # vscode
 .vscode/
 
+# clion
+.idea/
+
 # User Defined
 _premake5.lua
 tests/pylua.sh
@@ -737,3 +740,4 @@ tmp*
 bin/
 obj/
 .clangd/
+cmake-build-debug/
