@@ -103,11 +103,11 @@ static PyTypeObject pLuaFunc_Type = {
 	.tp_itemsize = 0,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 	.tp_new = &PyType_GenericNew,
-	.tp_init = &init_LuaFunc_Wrapper,
-	.tp_call = &call_LuaFunc,
-	.tp_iter = &iter_LuaCoroutine,
-	.tp_iternext = &next_LuaCoroutine,
-	.tp_finalize = &gc_LuaFunc,
+	.tp_init = (initproc)init_LuaFunc_Wrapper,
+	.tp_call = (ternaryfunc)call_LuaFunc,
+	.tp_iter = (getiterfunc)iter_LuaCoroutine,
+	.tp_iternext = (iternextfunc)next_LuaCoroutine,
+	.tp_finalize = (destructor)gc_LuaFunc,
 };
 
 // TODO: implement convertion to dict, list and iteration for Lua Tables and Instances
@@ -120,11 +120,11 @@ PyTypeObject pLuaTable_Type = {
 	.tp_itemsize = 0,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 	.tp_new = PyType_GenericNew,
-	.tp_init = &init_LuaTable_Wrapper,
+	.tp_init = (initproc)init_LuaTable_Wrapper,
 	.tp_as_mapping = &pLuaTable_MappingMethods,
-	.tp_call = &call_LuaTable_Wrapper,
-	.tp_iter = &iter_LuaTable,
-	.tp_finalize = &gc_LuaTable,
+	.tp_call = (ternaryfunc)call_LuaTable_Wrapper,
+	.tp_iter = (getiterfunc)iter_LuaTable,
+	.tp_finalize = (destructor)gc_LuaTable,
 };
 
 PyTypeObject pLuaInstance_Type = {
@@ -135,16 +135,16 @@ PyTypeObject pLuaInstance_Type = {
 	.tp_itemsize = 0,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 	.tp_new = PyType_GenericNew,
-	.tp_init = &init_LuaTable_Wrapper,
+	.tp_init = (initproc)init_LuaTable_Wrapper,
 	.tp_as_number = &pLuaInstance_NumberMethods,
 	.tp_as_mapping = &pLuaInstance_MappingMethods,
-	.tp_richcompare = &compare_LuaInstance_Wrapper,
-	.tp_getattr = &getattr_LuaInstance_Wrapper,
-	.tp_setattr = &setattr_LuaInstance_Wrapper,
-	.tp_call = &call_LuaInstance_Wrapper,
-	.tp_iter = &iter_LuaTable,
-	.tp_str = &string_LuaInstance_Wrapper,
-	.tp_finalize = &gc_LuaTable,
+	.tp_richcompare = (richcmpfunc)compare_LuaInstance_Wrapper,
+	.tp_getattr = (getattrfunc)getattr_LuaInstance_Wrapper,
+	.tp_setattr = (setattrfunc)setattr_LuaInstance_Wrapper,
+	.tp_call = (ternaryfunc)call_LuaInstance_Wrapper,
+	.tp_iter = (getiterfunc)iter_LuaTable,
+	.tp_str = (reprfunc)string_LuaInstance_Wrapper,
+	.tp_finalize = (destructor)gc_LuaTable,
 };
 
 static PyTypeObject pLuaModule_Type = {
@@ -155,40 +155,40 @@ static PyTypeObject pLuaModule_Type = {
 	.tp_itemsize = 0,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 	.tp_new = PyType_GenericNew,
-	.tp_init = &PyLua_LuaInit,
-	.tp_getattr = &PyLua_LuaGet,
-	.tp_setattr = &PyLua_LuaSet,
-	.tp_finalize = &PyLua_LuaGC,
+	.tp_init = (initproc)PyLua_LuaInit,
+	.tp_getattr = (getattrfunc)PyLua_LuaGet,
+	.tp_setattr = (setattrfunc)PyLua_LuaSet,
+	.tp_finalize = (destructor)PyLua_LuaGC,
 };
 
 
 static PyMappingMethods pLuaTable_MappingMethods = {
-	.mp_length = &len_LuaInstance_Wrapper,
-	.mp_subscript = &getelem_LuaTable_Wrapper,
-	.mp_ass_subscript = &setelem_LuaTable_Wrapper,
+	.mp_length = (lenfunc)len_LuaInstance_Wrapper,
+	.mp_subscript = (binaryfunc)getelem_LuaTable_Wrapper,
+	.mp_ass_subscript = (objobjargproc)setelem_LuaTable_Wrapper,
 };
 
 
 static PyMappingMethods pLuaInstance_MappingMethods = {
-	.mp_length = &len_LuaInstance_Wrapper,
+	.mp_length = (lenfunc)len_LuaInstance_Wrapper,
 };
 
 static PyNumberMethods pLuaInstance_NumberMethods = {
-	.nb_add = &add_LuaInstance_Wrapper,
-	.nb_subtract = &sub_LuaInstance_Wrapper,
-	.nb_multiply = &mul_LuaInstance_Wrapper,
-	.nb_true_divide = &div_LuaInstance_Wrapper,
-	.nb_floor_divide = &floordiv_LuaInstance_Wrapper,
-	.nb_power = &pow_LuaInstance_Wrapper,
-	.nb_remainder = &mod_LuaInstance_Wrapper,
-	.nb_negative = &neg_LuaInstance_Wrapper,
-	.nb_lshift = &lshift_LuaInstance_Wrapper,
-	.nb_rshift = &rshift_LuaInstance_Wrapper,
-	.nb_and = &band_LuaInstance_Wrapper,
-	.nb_or = &bor_LuaInstance_Wrapper,
-	.nb_xor = &bxor_LuaInstance_Wrapper,
-	.nb_invert = &bnot_LuaInstance_Wrapper,
-	.nb_matrix_multiply = &concat_LuaInstance_Wrapper,
+	.nb_add = (binaryfunc)add_LuaInstance_Wrapper,
+	.nb_subtract = (binaryfunc)sub_LuaInstance_Wrapper,
+	.nb_multiply = (binaryfunc)mul_LuaInstance_Wrapper,
+	.nb_true_divide = (binaryfunc)div_LuaInstance_Wrapper,
+	.nb_floor_divide = (binaryfunc)floordiv_LuaInstance_Wrapper,
+	.nb_power = (ternaryfunc)pow_LuaInstance_Wrapper,
+	.nb_remainder = (binaryfunc)mod_LuaInstance_Wrapper,
+	.nb_negative = (unaryfunc)neg_LuaInstance_Wrapper,
+	.nb_lshift = (binaryfunc)lshift_LuaInstance_Wrapper,
+	.nb_rshift = (binaryfunc)rshift_LuaInstance_Wrapper,
+	.nb_and = (binaryfunc)band_LuaInstance_Wrapper,
+	.nb_or = (binaryfunc)bor_LuaInstance_Wrapper,
+	.nb_xor = (binaryfunc)bxor_LuaInstance_Wrapper,
+	.nb_invert = (unaryfunc)bnot_LuaInstance_Wrapper,
+	.nb_matrix_multiply = (binaryfunc)concat_LuaInstance_Wrapper,
 };
 
 
@@ -204,7 +204,7 @@ static struct PyModuleDef LUA_module = {
 	"pylua",
 	"pylua doc",
 	-1,
-	&PyLua_Methods
+	PyLua_Methods
 };
 
 
@@ -285,7 +285,7 @@ static int PyLua_LuaSet(PyLua_LuaModule* self, char* attr, PyObject* pValue)
 static void PyLua_LuaGC(PyLua_LuaModule* self)
 {
 	// TODO: implement
-	return 0;
+	return;
 }
 
 
@@ -385,7 +385,7 @@ static PyObject* iter_LuaCoroutine(PyLua_LuaFunc* self)
 	}
 
 	Py_INCREF(self);
-	return self;
+	return (PyObject*)self;
 }
 
 static PyObject* next_LuaCoroutine(PyLua_LuaFunc* self)

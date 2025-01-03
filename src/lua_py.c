@@ -1,5 +1,6 @@
 #include "lua_py.h"
 #include <dlfcn.h>
+#include <wchar.h>
 
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
@@ -32,31 +33,7 @@ int luaopen_pylua(lua_State* L)
 
 		Py_Initialize();
 
-		wchar_t* path = Py_GetPath();
-
-		#if defined(_WIN32)
-		wchar_t new_path[800];
-		if (!new_path)
-		{
-			exit(-1);
-		}
-		new_path[0] = L'.';
-		new_path[1] = L';';
-		new_path[2] = L'\0';
-		#else
-		wchar_t new_path[800];
-		if (!new_path)
-		{
-			exit(-1);
-		}
-		new_path[0] = L'.';
-		new_path[1] = L':';
-		new_path[2] = L'\0';
-		#endif
-
-		wcsncat(new_path, path, wcslen(path));
-
-		PySys_SetPath(new_path);
+		PySys_SetArgv(0, NULL);
 
 		pPylua_Module = PyImport_ImportModule("pylua");
 		if (!pPylua_Module)
@@ -182,7 +159,7 @@ int call_PyFunc(lua_State* L)
 	LUA_MEMORY_ERROR(L);
 }
 
-int iter_PyGenerator(lua_State* L)
+int iter_PyGenerator(lua_State* L, int _a1, long _a2)
 {
 	PyLua_PyIterator* py_iter = (PyLua_PyIterator*)lua_touserdata(L, lua_upvalueindex(1));
 

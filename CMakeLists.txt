@@ -1,4 +1,6 @@
-cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required (VERSION 3.10)
+
+project(pylua)
 
 find_package(PkgConfig REQUIRED)
 
@@ -13,7 +15,7 @@ add_library(pylua SHARED src/convert.c src/py_lua.c src/lua_py.c)
 target_include_directories(pylua PRIVATE "src/")
 
 target_include_directories(pylua PRIVATE ${PYTHON_INCLUDE_DIRS})
-target_link_libraries(pylua ${PYTHON_LIBRARIES})
+target_link_libraries(pylua python3)
 target_compile_options(pylua PRIVATE ${PYTHON_CFLAGS_OTHER})
 
 target_link_libraries(pylua ${LUA_LIBRARIES})

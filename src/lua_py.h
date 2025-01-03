@@ -98,7 +98,7 @@ static int raise_error(lua_State* L, const char* msg)
 			if ((err_msg += snprintf(err_msg, err_max, "%s", traceback_msg)) < 0)
 			{
 				err_max *= 4;
-				err_msg = err_msg - _err_msg;
+				err_msg = (char*)(err_msg - _err_msg);
 				char* tmp = realloc(_err_msg, err_max);
 
 				if (tmp)
@@ -125,7 +125,7 @@ static int raise_error(lua_State* L, const char* msg)
 
 	PyObject* str_exc_value = PyObject_Repr(pExcValue);
 	PyObject* pExcValueStr = PyUnicode_AsEncodedString(str_exc_value, "utf-8", "strict");
-	const char* strExcValue = PyBytes_AS_STRING(pExcValueStr);
+	char* strExcValue = PyBytes_AS_STRING(pExcValueStr);
 
 	char* err_name = malloc(EXCEPTION_STR_LEN);
 	if (!err_name)
@@ -143,7 +143,7 @@ static int raise_error(lua_State* L, const char* msg)
 	if (snprintf(err_msg, err_max, "%s", err_name) < 0)
 	{
 		err_max *= 4;
-		err_msg = err_msg - _err_msg;
+		err_msg = (char*)(err_msg - _err_msg);
 		char* tmp = realloc(_err_msg, err_max);
 
 		if (tmp)
@@ -216,7 +216,7 @@ static int binary_base_pyobj_wrapper(lua_State* L, binary_op func)
 // Python Wrapper functions
 
 int call_PyFunc(lua_State* L);
-int iter_PyGenerator(lua_State* L);
+int iter_PyGenerator(lua_State* L, int _a1, long _a2);
 static int get_PyObj(lua_State* L);
 static int set_PyObj(lua_State* L);
 static int str_PyObj(lua_State* L);
