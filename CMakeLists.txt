@@ -19,11 +19,11 @@ message(STATUS "LUA_LIBRARIES = ${LUA_LIBRARIES}")
 message(STATUS "LUA_INCLUDE_DIRS = ${LUA_INCLUDE_DIRS}")
 message(STATUS "LUA_CFLAGS_OTHER = ${LUA_CFLAGS_OTHER}")
 
-if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT WIN32)
-    message(STATUS "Building in Debug, Therefore compiling with Code Coverage")
-    target_compile_options(pylua PRIVATE -coverage)
-    target_link_options(pylua PRIVATE -coverage)
-endif()
+# if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT WIN32)
+#     message(STATUS "Building in Debug, Therefore compiling with Code Coverage")
+#     target_compile_options(pylua PRIVATE -coverage)
+#     target_link_options(pylua PRIVATE -coverage)
+# endif()
 
 target_include_directories(pylua PRIVATE "src/")
 
