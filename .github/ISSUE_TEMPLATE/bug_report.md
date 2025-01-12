@@ -21,7 +21,6 @@ Steps to reproduce the behavior:
 A clear and concise description of what you expected to happen.
 
 **System Environment (please complete the following information):**
- - OS: [e.g. windows, linux]
  - Python Version: [e.g. 3.7, 3.8, 3.9, 3.10]
  - Lua Version: [e.g. 5.4]
 

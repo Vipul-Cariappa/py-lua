@@ -91,9 +91,8 @@ print(f"{ctf_40 = }, {ftc_n40 = }") # ctf_40 = 104.0, ftc_n40 = -40.0032
 To compile py-lua. First install the required dependencies:
 - python3
 - lua5.4
-- premake5
-- gcc (linux)
-- Visual Studio Code (windows)
+- cmake
+- pkg-config
 
 Clone the repository
 
@@ -101,19 +100,17 @@ Clone the repository
 git clone https://github.com/Vipul-Cariappa/py-lua.git
 ```
 
-Update `premake5.lua` file: Replace `/path/to/python/header` and `/path/to/lua/header` with actual header paths and replace `/path/to/python/shared_libraries` and `/path/to/lua/shared_libraries` with actual paths to shared libraries.
+You should be able to build it with CMake
 
-
-After updating paths run premake with desired action:
-```bash 
-premake5 [action]
+```bash
+cmake . -DCMAKE_BUILD_TYPE=Release
 ```
-You can now use compiler of your choice to build the pylua shared library.
 
-Copy the shared library pylua.so file to the working directory of your project.
+Followed by `make` in Unix.
 
-If you face any problems while building please ask for help [here](https://github.com/Vipul-Cariappa/py-lua/discussions/new).
+You will then need to copy `lib/libpylua.so` to your working directory as `pylua.so`.
 
+> Building py-lua on Windows is not yet tested.
 
 ## Contribution
 All contributions are welcomed. 

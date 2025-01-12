@@ -10,34 +10,51 @@ jobs:
     - uses: actions/setup-python@v2
       with:
         python-version: '3.10'
-    - uses: Vipul-Cariappa/lua-setup-action@main
 
     - name: Install Requirements
       run: |
+        sudo apt-get update
+        sudo apt-get install lua5.4 liblua5.4-dev make cmake gcc -y
         which python3
         which lua
     
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v1
+      uses: github/codeql-action/init@v3
       with:
           languages: cpp
           queries: security-and-quality
 
     - name: Build
-      run: bash .github/build.sh
+      run: |
+        cmake . -DCMAKE_BUILD_TYPE=Debug
+        make -j
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v1
+      uses: github/codeql-action/analyze@v3
 
+    - name: Test (setup)
+      run: |
+        cp lib/libpylua.so tests/pylua.so
+        cd tests
+        wget https://raw.githubusercontent.com/bluebird75/luaunit/master/luaunit.lua
+        cd ..
+    
     - name: Test
-      run: bash .github/test.sh
+      run: |
+        cd tests
+        lua test0.lua
+        lua test1.lua
+        lua test2.lua
+        lua test3.lua
+        lua test4.lua
+        python3 testA.py
+        cd ..
 
     - name: Code Coverage
       run: |
-        gcov -abcfu obj/Debug/lua_py.c
-        gcov -abcfu obj/Debug/py_lua.c
-        gcov -abcfu obj/Debug/convert.c
+        gcov -abcfu CMakeFiles/pylua.dir/src/lua_py.c
+        gcov -abcfu CMakeFiles/pylua.dir/src/py_lua.c
+        gcov -abcfu CMakeFiles/pylua.dir/src/convert.c
 
     - name: Upload Code Coverage
       uses: codecov/codecov-action@v1
-
